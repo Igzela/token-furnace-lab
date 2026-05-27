@@ -1,0 +1,134 @@
+# Token Furnace Lab matrix template
+# Copy to: knowledge/matrices/<matrix-name>.yaml
+#
+# Rules:
+# 1. Do not mark a case PASS unless evidence_path and evidence_type are present.
+# 2. For path-aware systems, global PASS requires all required paths to pass or a documented exception.
+# 3. A conformant case can still be unsafe if both paths share the same missing control.
+# 4. Summary counts must match actual case lists.
+# 5. Matrix PASS must not rely on model_inference alone.
+
+metadata:
+  id: <matrix-id>
+  name: "<matrix name>"
+  type: deny_path | gate_conformance | queue_ingress | bypass_risk | custom
+  target_repo: <repo>
+  target_branch: <branch>
+  target_commit: <sha>
+  created: YYYY-MM-DD
+  updated: YYYY-MM-DD
+  experiment_id: <experiment-id>
+  status: draft | active | archived
+
+rules: >
+  Matrix PASS must not rely on model_inference alone.
+
+groups:
+  - id: <group-id>
+    name: "<group name>"
+    priority: P0 | P1 | P2
+    cases:
+      - id: <case-id>
+        name: "<case name>"
+        expected: pass | deny | allow | redact | quarantine | no_execute | deny_or_noop | custom
+        severity: critical | high | medium | low
+        status: pass | warn | fail | partial | missing | blocked | deferred | untested
+
+        condition: >
+          <The condition being tested or inspected.>
+
+        paths:
+          <path-a>:
+            status: pass | warn | fail | partial | missing | blocked | deferred | untested
+            actual: <actual behavior>
+            evidence_type: static_inspection | unit_test | integration_test | runtime_trace | manual_review | model_inference
+            assertion_strength: strong | medium | weak | none
+            evidence_path: <file-or-run-path>
+            notes: ""
+          <path-b>:
+            status: pass | warn | fail | partial | missing | blocked | deferred | untested
+            actual: <actual behavior>
+            evidence_type: static_inspection | unit_test | integration_test | runtime_trace | manual_review | model_inference
+            assertion_strength: strong | medium | weak | none
+            evidence_path: <file-or-run-path>
+            notes: ""
+
+        conformance:
+          status: pass | warn | fail | partial | not_applicable
+          expected_relation: same_decision | same_output | compatible | not_applicable
+          actual_relation: ""
+          divergent: false
+          reason: ""
+
+        follow_up:
+          required: true | false
+          owner: <model-or-human-or-next-experiment>
+          deferred_to: <experiment-id-or-backlog>
+          notes: ""
+
+summary:
+  total_cases: 0
+  by_status:
+    pass: 0
+    warn: 0
+    fail: 0
+    partial: 0
+    missing: 0
+    blocked: 0
+    deferred: 0
+    untested: 0
+  by_priority:
+    P0:
+      total: 0
+      pass: 0
+      warn: 0
+      fail: 0
+    P1:
+      total: 0
+      pass: 0
+      warn: 0
+      fail: 0
+    P2:
+      total: 0
+      pass: 0
+      warn: 0
+      fail: 0
+  by_path:
+    <path-a>:
+      pass: 0
+      warn: 0
+      fail: 0
+      partial: 0
+      missing: 0
+    <path-b>:
+      pass: 0
+      warn: 0
+      fail: 0
+      partial: 0
+      missing: 0
+  conformance:
+    total: 0
+    pass: 0
+    warn: 0
+    fail: 0
+    divergent: 0
+
+known_gaps:
+  - id: <gap-id>
+    case: <case-id>
+    severity: low | medium | high | critical
+    reason: ""
+    deferred_to: <experiment-id-or-backlog>
+
+consistency_checks:
+  required:
+    - summary.total_cases equals actual case count
+    - summary.by_status totals equal actual case statuses
+    - summary.conformance.divergent equals divergent case count
+    - every P0 fail has follow_up.required=true
+    - every PASS case has evidence_path
+    - no PASS case relies only on model_inference
+    - no path-aware case has global status without per-path status
+
+notes:
+  - ""

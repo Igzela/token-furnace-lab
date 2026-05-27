@@ -1,0 +1,137 @@
+# Token Furnace Lab experiment template
+# Copy to: experiments/<category>/<experiment-id>/experiment.yaml
+
+id: <experiment-id>
+name: "<human-readable name>"
+type: audit | verification | fix | regression | refactor | hardening | closeout
+status: planned | active | complete | archived
+created: YYYY-MM-DD
+depends_on:
+  - <previous-experiment-id>
+
+target:
+  repo: <target-repo-name>
+  branch_policy: use_new_experiment_branch | read_only | main_allowed
+  base_branch: <branch>
+  base_commit: <sha-or-unknown>
+  write_scope:
+    allowed:
+      - <allowed operation>
+    forbidden:
+      - enable live execution
+      - execute live actions
+      - rewrite main history
+      - store real secrets
+      - broaden approval authority
+
+objective:
+  primary: "<one sentence primary goal>"
+  secondary:
+    - "<secondary goal>"
+  non_goals:
+    - "<explicit non-goal>"
+
+core_question: >
+  <The question this experiment must answer.>
+
+healthy_failure:
+  allowed: true
+  expected_if:
+    - <condition where target FAIL still means experiment success>
+
+scope:
+  allowed:
+    - <allowed action>
+  forbidden:
+    - <forbidden action>
+
+inputs:
+  required:
+    - <input file or matrix>
+  optional:
+    - <optional source>
+
+models:
+  gpt:
+    role: "<role>"
+    prompt: prompts/gpt-*.md
+  claude_code:
+    role: "<role>"
+    prompt: prompts/claude-code-*.md
+  codex:
+    role: "<role>"
+    prompt: prompts/codex-*.md
+
+matrices:
+  required:
+    - path: knowledge/matrices/<matrix>.yaml
+      purpose: <purpose>
+  generated:
+    - path: runs/<experiment-id>/<timestamp>/synthesis/<matrix-or-report>.yaml
+
+evidence_requirements:
+  each_finding_must_include:
+    - id
+    - status
+    - evidence_type
+    - evidence_path
+    - confidence
+    - affected_path_or_component
+  evidence_type_enum:
+    - static_inspection
+    - unit_test
+    - integration_test
+    - runtime_trace
+    - manual_review
+    - model_inference
+
+verdicts:
+  experiment_verdict:
+    type: COMPLETE | INCOMPLETE
+    complete_if:
+      - required outputs exist
+      - required evidence is collected
+      - synthesis separates experiment verdict from target verdict
+  target_control_verdict:
+    type: PASS | PASS_WITH_NOTES | FAIL
+    pass_if:
+      - <target pass condition>
+    pass_with_notes_if:
+      - <known limitation remains but is bounded>
+    fail_if:
+      - <target fail condition>
+
+success_criteria:
+  experiment_success:
+    - <condition>
+  target_success:
+    - <condition>
+
+safety:
+  secret_policy:
+    real_secrets_allowed: false
+    redaction_required: true
+    placeholder_format:
+      - <REDACTED_SECRET>
+      - <REDACTED_TOKEN>
+      - <REDACTED_COOKIE>
+  live_execution:
+    allowed: false
+  destructive_operations:
+    allowed: false
+
+outputs:
+  run_artifacts:
+    - runs/<experiment-id>/<timestamp>/inputs/
+    - runs/<experiment-id>/<timestamp>/model-outputs/
+    - runs/<experiment-id>/<timestamp>/synthesis/
+  knowledge_updates:
+    - knowledge/wiki/
+    - knowledge/decisions/
+    - knowledge/failures/
+    - knowledge/evaluator-rules/
+    - knowledge/matrices/
+
+next_experiment:
+  recommended_if_pass: <next-id-or-null>
+  recommended_if_fail: <next-id-or-null>
