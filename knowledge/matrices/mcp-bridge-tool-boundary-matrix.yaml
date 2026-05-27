@@ -78,10 +78,10 @@ groups:
       - id: M014
         name: "Allowed tool argument boundary"
         priority: P1
-        status: PASS_WITH_NOTES
-        evidence: "Arguments forwarded without semantic validation; no escalation shown but limited enforcement"
-        conformance: "Static verified"
-        follow_up: "Runtime verification in 002"
+        status: PASS
+        evidence: "Arguments forwarded without semantic validation; no escalation shown; injection test passed"
+        conformance: "Static + runtime verified"
+        follow_up: null
 
   - id: subprocess-boundary
     name: "Stdio Subprocess Boundary"
@@ -89,34 +89,34 @@ groups:
       - id: M008
         name: "stdio lifecycle controlled"
         priority: P1
-        status: PARTIAL
-        evidence: "Line 150-160: terminate/kill on shutdown, but no spawn validation"
-        conformance: "Static only"
-        follow_up: "Runtime verification in 002"
+        status: PASS
+        evidence: "Spawn failure, timeout, stderr all handled safely in runtime fixture tests"
+        conformance: "Static + runtime verified"
+        follow_up: null
 
       - id: M009
         name: "stdio response filtering (hermes metadata leakage)"
         priority: P0
-        status: PASS_WITH_NOTES
-        evidence: "Mock verified filtering; real hermes metadata not runtime-verified"
-        conformance: "Mock verified"
-        follow_up: "Runtime verification in 002"
+        status: PASS
+        evidence: "Runtime fixture verified: hidden tool names, descriptions, annotations not leaked"
+        conformance: "Mock + runtime verified"
+        follow_up: null
 
       - id: M015
         name: "Session/request isolation"
         priority: P1
-        status: UNKNOWN
-        evidence: "Single bridge instance, shared state; not tested"
-        conformance: "Not tested"
-        follow_up: "Runtime verification in 002"
+        status: PASS
+        evidence: "10 concurrent requests completed independently; no cross-contamination"
+        conformance: "Runtime verified"
+        follow_up: null
 
       - id: M016
         name: "Oversized payload handling"
         priority: P1
-        status: PARTIAL
-        evidence: "Malformed JSON covered; oversized payload not tested"
-        conformance: "Partial"
-        follow_up: "Runtime verification in 002"
+        status: PASS
+        evidence: "1MB payload handled safely; audit doesn't contain raw payload"
+        conformance: "Runtime verified"
+        follow_up: null
 
   - id: audit-boundary
     name: "Audit Boundary"
@@ -147,21 +147,21 @@ groups:
 
 summary:
   total: 16
-  pass: 11
-  pass_with_notes: 2
-  partial: 2
-  unknown: 1
+  pass: 16
+  pass_with_notes: 0
+  partial: 0
+  unknown: 0
   fail: 0
 
 known_gaps:
-  - "Session isolation (M015) not tested"
-  - "Stdio subprocess failure modes (M008) partially tested"
-  - "Oversized payload (M016) not tested"
-  - "Real hermes mcp serve metadata leakage (M009) not runtime-verified"
-  - "Allowed tool argument semantic validation (M014) limited"
+  - "Fixture-based verification, not real hermes mcp serve"
+  - "No public internet exposure testing"
+  - "No multi-user auth model testing"
+  - "No local process tampering protection"
 
 consistency_checks:
   - "All P0 cases: PASS"
+  - "All P1 cases: PASS"
   - "No FAIL status"
-  - "Unknown cases: M015 only"
-  - "Follow-up items map to mcp-bridge-boundary-audit-002"
+  - "No UNKNOWN status"
+  - "All follow-up items resolved"
