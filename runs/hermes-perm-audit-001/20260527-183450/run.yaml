@@ -1,0 +1,21 @@
+experiment_id: hermes-perm-audit-001
+furnace_git:
+  branch: exp/hermes-perm-audit-001
+  commit: 161f82b33457054b67031a9031ab79bc6070613a
+  dirty: '?? experiments/agent-workflow/
+
+    ?? requirements.txt
+
+    ?? scripts/new_run.py
+
+    ?? scripts/summarize_run.py
+
+    ?? scripts/validate_run.py'
+operator: igzela
+status: created
+target_git:
+  branch: harness-onboarding
+  commit: 05092f09ef3d947b1fa303c3eee656de9453569b
+  dirty: M drafts/hermes-local-execution-worker.service.draft
+target_repo: /home/igzela/Projects/hermes-gateway-lab
+timestamp: 20260527-183450

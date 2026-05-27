@@ -1,0 +1,6 @@
+=== git status ===
+ M drafts/hermes-local-execution-worker.service.draft
+=== branch ===
+harness-onboarding
+=== commit ===
+05092f09ef3d947b1fa303c3eee656de9453569b
