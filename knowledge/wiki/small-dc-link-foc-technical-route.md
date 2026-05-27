@@ -56,12 +56,19 @@ Technical roadmap for 22µF DC-link + sensorless FOC + water pump + TMS320F28035
 - Reduced-order harmonic observer (adapted from A3)
 - Ripple-aware current control
 
-**Feasibility**: MARGINAL — requires custom mathematical derivation
+**Feasibility**: CONDITIONAL — derived in model-derivation-001, verified by GPT
+
+**Derivation Results** (experiment 001, score 90/100):
+- Single-phase + 22µF + 360W: **INFEASIBLE** (ΔV = 545V > V_dc = 300V)
+- Three-phase + 22µF + 360W: **MARGINAL** (ΔV = 182V, 61%pp)
+- With APD (20dB): feasible if real energy buffer exists
+- Pavg_ref = P₀ + k·ω³ (not just k·ω³/η — GPT refinement)
+- SMO tolerance: <10%pp conservative, 10-20%pp attemptable with Vdc feedforward
 
 **Risks**:
 1. A3's 7th-order observer too heavy for F28035 → reduce to 3rd or 5th order
-2. Pavg_ref and 22µF ripple model cannot be inherited from papers
-3. Sensorless FOC robustness under large voltage ripple unknown
+2. Single-phase input requires APD with real energy buffer (extra capacitor/inductor)
+3. Minimum bus voltage (Vdc_min = Vdc_avg - ΔVpp/2) may cause voltage saturation before SMO fails
 
 ### Phase D: Integration & Testing
 
@@ -75,13 +82,16 @@ Technical roadmap for 22µF DC-link + sensorless FOC + water pump + TMS320F28035
 
 ## Critical Gaps
 
-1. **Pavg_ref**: Power reference calculation method not in any paper
-2. **22µF ripple model**: Papers assume large capacitance
-3. **Torque ripple coupling**: Voltage ripple → current → torque chain
-4. **Sensorless FOC under large ripple**: Robustness assessment needed
+1. ~~**Pavg_ref**: Power reference calculation method not in any paper~~ → **RESOLVED** (derivation-001): P_avg_ref = P₀ + k·ω³
+2. ~~**22µF ripple model**: Papers assume large capacitance~~ → **RESOLVED** (derivation-001): single-phase infeasible, three-phase marginal
+3. **Torque ripple coupling**: Voltage ripple → current → torque chain — still open
+4. ~~**Sensorless FOC under large ripple**: Robustness assessment needed~~ → **RESOLVED** (derivation-001): <10%pp conservative, 10-20%pp attemptable with Vdc feedforward
+5. **Input topology**: Single-phase or three-phase? — must be confirmed before proceeding
+6. **APD energy buffer sizing**: If single-phase, what hardware is needed for 0.57J buffer?
 
 ## References
 
 - A1: arXiv 2503.22855
 - A2: arXiv 2305.04046
 - A3: arXiv 1901.10020
+- E1: small-dc-link-foc-model-derivation-001 — Pavg_ref + ripple model derivation (score 90/100, PASS)
