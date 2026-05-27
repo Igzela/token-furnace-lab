@@ -4,7 +4,7 @@
 
 - Generated: 2026-05-28
 - Maturity: L3-VALIDATED
-- Total Phases Completed: 3
+- Total Phases Completed: 4
 
 ## Completed Phases
 
@@ -13,6 +13,7 @@
 | Phase 1 | Hermes permission audit (001-008) | hermes-perm-audit-phase-1 | COMPLETE/PASS | 3e1b004 |
 | Phase 2 | MCP bridge tool-boundary audit | mcp-bridge-boundary-audit-phase-1 | COMPLETE/PASS/PASS | a9615de |
 | Phase 3 | Workflow quality-gate audit | workflow-quality-gate-audit-phase-1 | COMPLETE/PASS_WITH_NOTES/PASS | 6a7df2d |
+| Phase 4 | PDF-to-algorithm extraction benchmark | pdf-to-algorithm-benchmark-phase-1 | COMPLETE/PASS_WITH_NOTES/PASS | 0e46c71 |
 
 ## Platform Consolidation
 
@@ -33,6 +34,7 @@ Capabilities validated:
 - 30-case workflow quality-gate matrix
 - 16-case MCP bridge boundary matrix
 - 8-case hermes permission matrix
+- PDF-to-algorithm extraction pipeline (Claude Code → GPT → quality assessment)
 
 ## Reusable Templates
 
@@ -61,13 +63,13 @@ python3 scripts/validate_synthesis_evidence.py runs/<experiment>/<timestamp>/
 3. **Codex role is contract-based**: Not globally mandatory, only checked if declared
 4. **No CI/CD integration**: Validators run locally, not in pipeline
 
-## Phase 4 Candidates
+## Phase 5 Candidates
 
-1. **PDF-to-algorithm extraction benchmark** — Validates generalization from agent security audit to research extraction
+1. **Small DC-link FOC source acquisition** — Find papers directly covering electrolytic-capacitorless or small-DC-link PMSM sensorless FOC
 2. **OpenClaw runtime permission audit** — Another agent security target
 3. **Public exposure / tunnel security audit** — Network boundary testing
 
-**Recommended**: PDF-to-algorithm extraction benchmark (GPT recommendation)
+**Recommended**: Small DC-link FOC source acquisition (GPT recommendation)
 
 ## Tags
 
@@ -77,4 +79,5 @@ git tag mcp-bridge-boundary-audit-phase-1
 git tag token-furnace-platform-v1
 git tag token-furnace-methodology-v1
 git tag workflow-quality-gate-audit-phase-1
+git tag pdf-to-algorithm-benchmark-phase-1
 ```
