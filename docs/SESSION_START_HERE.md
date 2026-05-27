@@ -19,13 +19,13 @@ Token Furnace Lab is a local AI-agent experiment lab. It deliberately spends man
 
 Latest run: `runs/small-dc-link-foc-derivation-005/20260528-010000`
 
-Status: `NEEDS_FINAL_VERIFICATION`
+Status: `LOCAL_PASS_NEEDS_GPT_FINAL`
 
 What happened:
 
 - Claude Code built a low-order FOC + APD + 22uF DC-link simulation and sweep.
 - GPT flagged model bugs in the first result, especially DC-link energy using mechanical instead of electrical motor power.
-- A later synthesis says core fixes were applied and ideal APD behavior was recovered, but practical APD clamping still needs final verification before accepting the conclusion.
+- A revised local synthesis says corrected results are 88/100 PASS and 300W has passing configurations, but GPT final verification is still pending before accepting the conclusion.
 
 Do not treat derivation-005 as a final design decision until the corrected model, GPT verification, and synthesis are reconciled.
 

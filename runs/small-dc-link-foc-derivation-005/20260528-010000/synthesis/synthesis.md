@@ -2,15 +2,16 @@
 
 ## Verdict
 
-`NEEDS_FINAL_VERIFICATION`
+`LOCAL_PASS_NEEDS_GPT_FINAL`
 
 ## What Is Accepted
 
 - A joint simulation run exists for FOC + APD + 22uF DC-link behavior.
 - GPT found material model bugs in the first result.
 - The first "0/486 pass" conclusion must not be used as a design decision.
-- `model_outputs/simulation_model.py` has a follow-up correction for APD-loss-inclusive `Pavg_total`; the recorded sweep outputs need rerun verification against that code.
-- Any final conclusion about 300W feasibility must wait for corrected-model verification.
+- The corrected model has regenerated sweep outputs: 336/486 overall pass, 66/162 300W pass.
+- The revised local synthesis is 88/100 PASS.
+- Any sealed conclusion about 300W feasibility must wait for GPT final verification.
 
 ## What Is Not Yet Accepted
 
@@ -36,6 +37,5 @@ Run final verification of the corrected model:
 1. Confirm DC-link energy uses electrical motor power.
 2. Add or inspect average power balance sanity checks.
 3. Verify APD energy centering and clamping behavior.
-4. Rerun the sweep if corrections change conclusions.
-5. Ask GPT or another judge model for final review.
-6. Update the wiki only after the conclusion is accepted.
+4. Send corrected results to GPT or another judge model for final review.
+5. Update the wiki only after the conclusion is accepted.

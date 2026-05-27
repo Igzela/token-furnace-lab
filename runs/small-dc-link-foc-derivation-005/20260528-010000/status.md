@@ -2,7 +2,7 @@
 
 ## Status
 
-`NEEDS_FINAL_VERIFICATION`
+`LOCAL_PASS_NEEDS_GPT_FINAL`
 
 ## Summary
 
@@ -10,9 +10,9 @@ This run created a low-order joint simulation for FOC + APD + 22uF DC-link behav
 
 The first result reported 0/486 passing configurations, but GPT identified model bugs and rejected the core conclusion. The most important bug was using mechanical motor power in the DC-link energy balance instead of electrical motor power.
 
-The later synthesis says the model was corrected and ideal APD behavior was recovered, but the practical APD clamping conclusion is not yet final. A follow-up GPT verification or independent model review is required before accepting any design decision from derivation-005.
+The revised local synthesis scores the corrected model at 88/100 PASS. The regenerated sweep reports 336/486 passing configurations overall and 66/162 passing 300W configurations.
 
-Follow-up code note: `model_outputs/simulation_model.py` was corrected after the sweep to define APD-loss-inclusive `Pavg_total` before the FOC current calculation. Treat existing `sweep_results.md` and `sweep_raw.json` as pre-rerun outputs until the simulation is rerun with that correction.
+This is still pending GPT final verification. Treat the current result as a local PASS candidate, not a sealed design decision.
 
 ## Current Handoff
 
@@ -28,16 +28,15 @@ Read in this order:
 
 ## Next Required Step
 
-Reconcile the corrected simulation model with GPT's `NEEDS_MODEL_FIX` review:
+Finish final verification of the corrected simulation model:
 
 - verify the electrical-power DC-link balance
 - verify mean power balance checks
 - verify APD energy centering and clamping behavior
-- rerun the sweep if needed
-- regenerate `sweep_results.md` and `sweep_raw.json` if the corrected model changes outputs
-- write a final GPT or independent verification note
+- send the corrected sweep and revised synthesis to GPT or an independent judge
+- write the final verification note
 - update `knowledge/wiki/small-dc-link-foc-technical-route.md` only after the result is accepted
 
 ## Boundary
 
-Do not treat "300W infeasible with 16uF APD" or "300W feasible with 16uF APD" as accepted yet. The accepted status is only: derivation-005 is in progress and needs final verification.
+Do not treat the 300W feasibility conclusion as sealed yet. The accepted handoff status is: local revised PASS candidate, GPT final pending.

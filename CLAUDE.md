@@ -85,7 +85,7 @@ Active Research — 个人研究项目，迭代中，无外部用户。
   - derivation-002: energy balance (85/100 PASS_WITH_NOTES)
   - derivation-003: FOC voltage envelope (82/100 PASS_WITH_NOTES)
   - derivation-004: APD sizing (78/100 PASS_WITH_TWO_CORRECTIONS)
-  - derivation-005: joint simulation (NEEDS_FINAL_VERIFICATION — GPT rejected first model conclusion; corrected-model result not accepted yet)
+  - derivation-005: joint simulation (88/100 LOCAL_PASS_NEEDS_GPT_FINAL — corrected sweep passes locally, GPT final pending)
   - phase-a-001: FOC baseline design (COMPLETE)
   - 详细进度见 `knowledge/wiki/small-dc-link-foc-technical-route.md`
 - `mcp-bridge-boundary-audit` — MCP 桥接边界审计
@@ -93,7 +93,7 @@ Active Research — 个人研究项目，迭代中，无外部用户。
 ### Key Decisions (FOC derivation series)
 
 - **Solution fork**: Path A — keep 22µF DC-link + add APD (Active Power Decoupling)
-- **APD**: 16µF/500V H-bridge, 90% decoupling → 300W achievable at 3000-4000rpm remains the last accepted result; derivation-005 is under review and must not revise this until final verification.
+- **APD**: 16µF/500V H-bridge, 90% decoupling → 300W achievable at 3000-4000rpm remains the last accepted result; derivation-005 provides a stronger local PASS candidate but needs GPT final verification before sealing.
 - **Motor parameter**: ψ_f ≤ 0.103 for 300V/4000rpm (revised from 0.15 to 0.08)
 - **GPT communication**: via Chrome DevTools MCP (`fill` + `press_key Enter`, not `type_text`)
 - **GPT role**: Cross-verification of derivations; GPT caught 3 critical formula/numerical errors and identified derivation-005 APD/model bugs

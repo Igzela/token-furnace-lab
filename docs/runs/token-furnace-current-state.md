@@ -77,10 +77,10 @@ python3 scripts/validate_synthesis_evidence.py runs/<experiment>/<timestamp>/
 - Research branch retained: `exp/hermes-perm-audit-001`
 - Active thread: `small-dc-link-foc-derivation`
 - Latest run: `runs/small-dc-link-foc-derivation-005/20260528-010000`
-- Latest run status: `NEEDS_FINAL_VERIFICATION`
+- Latest run status: `LOCAL_PASS_NEEDS_GPT_FINAL`
 - New session entrypoint: `docs/SESSION_START_HERE.md`
 
-Derivation-005 must not be treated as final. GPT rejected the first simulation conclusion due to model bugs; a later local synthesis records corrections but still needs final verification before updating accepted design constraints.
+Derivation-005 must not be treated as sealed. GPT rejected the first simulation conclusion due to model bugs; a revised local synthesis now reports 88/100 PASS, but GPT final verification is still pending before updating accepted design constraints.
 
 Coding agents must update this file, the active run status, and the relevant `knowledge/wiki/` page before committing any accepted experiment result.
 

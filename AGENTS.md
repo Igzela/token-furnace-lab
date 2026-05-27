@@ -20,7 +20,7 @@ If these files disagree with git history, repair the documentation before contin
 - Research branch retained: `exp/hermes-perm-audit-001`
 - Active research thread: `small-dc-link-foc-derivation`
 - Latest run: `runs/small-dc-link-foc-derivation-005/20260528-010000`
-- Current status: derivation-005 is not a final PASS; it needs final model verification after GPT flagged and then partially corrected simulation issues.
+- Current status: derivation-005 is a local revised PASS candidate; GPT final verification is still pending.
 
 ## Hard Boundaries
 
