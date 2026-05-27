@@ -2,6 +2,10 @@
 
 AI Agent 系统压测与知识蒸馏实验室
 
+**New coding-agent sessions should start with [docs/SESSION_START_HERE.md](docs/SESSION_START_HERE.md), then [AGENTS.md](AGENTS.md) and [CLAUDE.md](CLAUDE.md).**
+
+Agents must update the active run status, current-state index, and knowledge wiki after every commit-sized experiment change.
+
 ## Goal
 
 构建一个高 token 消耗但高沉淀率的 AI agent 实验系统，用于测试、比较、压测和改进多模型、多工具、多知识库协作流程。

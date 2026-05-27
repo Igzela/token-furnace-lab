@@ -8,6 +8,18 @@
 
 Active Research — 个人研究项目，迭代中，无外部用户。
 
+## 新 session 启动顺序
+
+所有 Claude Code、Codex 或其他 coding agent 必须先读：
+
+1. `docs/SESSION_START_HERE.md`
+2. `AGENTS.md`
+3. `docs/runs/token-furnace-current-state.md`
+4. `knowledge/wiki/small-dc-link-foc-technical-route.md`
+5. 最新 active run 的 `status.md`、`task.md`、`model_outputs/` 和 `synthesis/`
+
+如果这些文件、README、最近 git log 互相冲突，先修文档，不要直接推进实验。
+
 ## 非目标（Out of Scope）
 
 - 不是生产部署的 AI agent — 这是实验室/研究项目
@@ -73,7 +85,7 @@ Active Research — 个人研究项目，迭代中，无外部用户。
   - derivation-002: energy balance (85/100 PASS_WITH_NOTES)
   - derivation-003: FOC voltage envelope (82/100 PASS_WITH_NOTES)
   - derivation-004: APD sizing (78/100 PASS_WITH_TWO_CORRECTIONS)
-  - derivation-005: joint simulation (72/100 NEEDS_REVIEW — APD clamping asymmetry limits 300W; 100W achievable)
+  - derivation-005: joint simulation (NEEDS_FINAL_VERIFICATION — GPT rejected first model conclusion; corrected-model result not accepted yet)
   - phase-a-001: FOC baseline design (COMPLETE)
   - 详细进度见 `knowledge/wiki/small-dc-link-foc-technical-route.md`
 - `mcp-bridge-boundary-audit` — MCP 桥接边界审计
@@ -81,11 +93,11 @@ Active Research — 个人研究项目，迭代中，无外部用户。
 ### Key Decisions (FOC derivation series)
 
 - **Solution fork**: Path A — keep 22µF DC-link + add APD (Active Power Decoupling)
-- **APD**: 16µF/500V H-bridge, 90% decoupling → 300W achievable at 3000-4000rpm → **REVISED** (derivation-005): APD clamping asymmetry limits 300W; 100W achievable
+- **APD**: 16µF/500V H-bridge, 90% decoupling → 300W achievable at 3000-4000rpm remains the last accepted result; derivation-005 is under review and must not revise this until final verification.
 - **Motor parameter**: ψ_f ≤ 0.103 for 300V/4000rpm (revised from 0.15 to 0.08)
 - **GPT communication**: via Chrome DevTools MCP (`fill` + `press_key Enter`, not `type_text`)
-- **GPT role**: Cross-verification of derivations; GPT caught 3 critical formula/numerical errors + identified APD model bugs
-- **Model corrections** (derivation-005): electrical power (3-phase), quadratic Iq solution, APD energy center init
+- **GPT role**: Cross-verification of derivations; GPT caught 3 critical formula/numerical errors and identified derivation-005 APD/model bugs
+- **Model corrections under review** (derivation-005): electrical power (3-phase), quadratic Iq solution, APD energy center init
 
 ## 决策与知识库
 
@@ -128,3 +140,17 @@ Active Research — 个人研究项目，迭代中，无外部用户。
 5. 多模型交叉审计
 6. 知识沉淀 (wiki + rules + evaluator)
 7. 生成 next_experiment.md
+
+## 文档维护规则
+
+每次 commit 前，如果 active run、分支、状态、验证结果、accepted finding 或 next experiment 发生变化，必须同步更新：
+
+- `docs/SESSION_START_HERE.md`
+- `docs/runs/token-furnace-current-state.md`
+- `knowledge/wiki/small-dc-link-foc-technical-route.md`
+- `README.md`
+- `CLAUDE.md`
+- `AGENTS.md`
+- active run 的 `status.md`、`run.yaml`、`synthesis/`
+
+如果不需要更新文档，在 completion report 中说明原因。新 session 必须能只靠文档接手。

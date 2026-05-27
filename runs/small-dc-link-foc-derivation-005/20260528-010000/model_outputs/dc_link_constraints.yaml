@@ -14,10 +14,3 @@ constraints:
     min: 200.0
 
 operating_points:
-  best_100W:
-    Vnom: 354
-    Capd: 22uF
-    D_apd: 95%
-    speed_rpm: 3000
-    vdc_ripple: 0.6%pp
-    torque_ripple: 2.2%

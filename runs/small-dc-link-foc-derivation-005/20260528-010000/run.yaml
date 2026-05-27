@@ -1,0 +1,22 @@
+run_id: small-dc-link-foc-derivation-005
+timestamp: "20260528-010000"
+status: NEEDS_FINAL_VERIFICATION
+topic: FOC + APD + 22uF DC-link joint dynamic simulation
+branch: exp/hermes-perm-audit-001
+verdicts:
+  experiment_verdict: IN_PROGRESS
+  model_verdict: NEEDS_FINAL_VERIFICATION
+  reason: >
+    GPT rejected the first model conclusion due to simulation bugs. A later synthesis
+    records applied fixes and an ideal APD sanity pass, but practical APD clamping
+    still needs final verification before the result can be accepted.
+deliverables:
+  - task.md
+  - model_outputs/claude-code-derivation.md
+  - model_outputs/gpt-verification.md
+  - model_outputs/simulation_model.py
+  - model_outputs/sweep_results.md
+  - model_outputs/dc_link_constraints.yaml
+  - model_outputs/synthesis.md
+  - synthesis/synthesis.md
+next_step: Reconcile corrected simulation with GPT review and produce final verification.

@@ -130,19 +130,27 @@ def run_simulation(cfg: SweepConfig, sp: SystemParams = None,
         Papd_cmd = -D * Pavg * cos2wt
 
         # ── 3. APD energy balance ────────────────────────────────
-        Ploss = sp.Ploss_apd_frac * abs(Papd_cmd)
-        dEapd = Papd_cmd - Ploss
-        E_apd_new = E_apd + dEapd * dt
-
+        # Step 1: Clamp power to voltage window
+        E_apd_new = E_apd + Papd_cmd * dt
         if E_apd_new > E_apd_hi:
-            Papd_actual = (E_apd_hi - E_apd) / dt + Ploss
+            Papd_clamped = (E_apd_hi - E_apd) / dt
             E_apd = E_apd_hi
         elif E_apd_new < E_apd_lo:
-            Papd_actual = (E_apd_lo - E_apd) / dt + Ploss
+            Papd_clamped = (E_apd_lo - E_apd) / dt
             E_apd = E_apd_lo
         else:
-            Papd_actual = Papd_cmd
+            Papd_clamped = Papd_cmd
             E_apd = E_apd_new
+        # Step 2: Apply losses only when APD is conducting (not at voltage limits)
+        # When clamped at limits, actual current ≈ 0, so losses ≈ 0
+        is_clamped = (E_apd >= E_apd_hi and Papd_cmd > 0) or (E_apd <= E_apd_lo and Papd_cmd < 0)
+        if is_clamped:
+            Papd_actual = Papd_clamped
+        else:
+            Ploss = sp.Ploss_apd_frac * abs(Papd_clamped)
+            Papd_actual = Papd_clamped - Ploss
+            E_apd -= Ploss * dt
+            E_apd = max(E_apd, E_apd_lo)
 
         Vapd = math.sqrt(2.0 * E_apd / Capd)
 
@@ -153,8 +161,9 @@ def run_simulation(cfg: SweepConfig, sp: SystemParams = None,
         Vmargin = Vlim - Vemf_q
 
         # Iq from electrical power command:
-        # Pavg_elec = 1.5 * (Rs*Iq + Vemf_q) * Iq
+        # Pavg = 1.5 * (Rs*Iq + Vemf_q) * Iq
         # Quadratic: 1.5*Rs*Iq² + 1.5*Vemf_q*Iq - Pavg = 0
+        # APD losses are a DC-link burden (drawn from capacitor), not a motor burden
         a_q = 1.5 * motor.Rs
         b_q = 1.5 * Vemf_q
         disc = b_q * b_q + 4.0 * a_q * Pavg
@@ -171,7 +180,7 @@ def run_simulation(cfg: SweepConfig, sp: SystemParams = None,
         Iq_cmd = min(Iq_cmd, motor.I_rated)
 
         # Track if voltage-limited (compared to unrated Iq from power command)
-        Iq_unrated = (-b_q + math.sqrt(b_q * b_q + 4.0 * a_q * Pavg)) / (2.0 * a_q) if disc > 0 and a_q > 0.01 else 0.0
+        Iq_unrated = (-b_q + math.sqrt(b_q * b_q + 4.0 * a_q * Pavg_total)) / (2.0 * a_q) if disc > 0 and a_q > 0.01 else 0.0
         if Iq_cmd < Iq_unrated - 0.01:
             n_iq_limited += 1
 

@@ -9,11 +9,12 @@ status: COMPLETE
 
 verdicts:
   experiment_verdict: COMPLETE
-  target_control_verdict: PASS
+  target_control_verdict: PASS_WITH_NOTES
   reason: |
-    All 24 regression tests pass. Gate conformance regression suite
-    validates 7 P0 deny cases on both paths, dual-path equivalence,
-    worker no-execute after deny, and secret redaction persistence.
+    24/24 regression tests pass. 0/25 divergence. But C001 still partial
+    (worker retains independent gate function), D012 not covered, and
+    audit() itself doesn't sanitize — only callers do. Regression PASS,
+    not architecture PASS.
 
 deliverables:
   - scripts/gate_conformance_regression.py (24 tests, 4 layers)

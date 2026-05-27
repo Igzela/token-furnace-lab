@@ -71,6 +71,18 @@ python3 scripts/validate_synthesis_evidence.py runs/<experiment>/<timestamp>/
 
 **Recommended**: Small DC-link FOC source acquisition (GPT recommendation)
 
+## Current Active Research Handoff
+
+- Active branch: `exp/hermes-perm-audit-001`
+- Active thread: `small-dc-link-foc-derivation`
+- Latest run: `runs/small-dc-link-foc-derivation-005/20260528-010000`
+- Latest run status: `NEEDS_FINAL_VERIFICATION`
+- New session entrypoint: `docs/SESSION_START_HERE.md`
+
+Derivation-005 must not be treated as final. GPT rejected the first simulation conclusion due to model bugs; a later local synthesis records corrections but still needs final verification before updating accepted design constraints.
+
+Coding agents must update this file, the active run status, and the relevant `knowledge/wiki/` page before committing any accepted experiment result.
+
 ## Tags
 
 ```bash

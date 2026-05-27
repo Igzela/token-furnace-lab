@@ -1,5 +1,7 @@
 # derivation-005: Synthesis
 
+> Handoff note (2026-05-28): this model-output synthesis is under review, not an accepted design decision. Use `status.md` and `synthesis/synthesis.md` as the authoritative run status until final verification reconciles the corrected model with GPT's `NEEDS_MODEL_FIX` review.
+
 ## Score: 72/100 (NEEDS_REVIEW)
 
 **Rationale**: Model corrections applied (electrical power, quadratic Iq, APD energy center) produce correct results for ideal case. However, the 90% APD case still fails due to clamping asymmetry — a real physical effect that GPT may dispute. Awaiting GPT's final verification.
