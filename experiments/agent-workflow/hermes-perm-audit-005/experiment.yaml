@@ -1,0 +1,79 @@
+id: hermes-perm-audit-005
+name: "Shared Gate Policy Extraction"
+type: agent-workflow
+created: 2026-05-27
+status: complete
+depends_on: hermes-perm-audit-004
+
+objective: |
+  Extract duplicated gate checks from marker_executor and worker_daemon
+  into a shared gate_policy.py module. Eliminate architectural drift root cause.
+
+  After 003/004, behavioral equivalence is achieved (0/25 divergence) and
+  locked by regression tests (24/24 pass). But both paths still maintain
+  independent gate logic — a single source of truth doesn't exist.
+
+  005 creates gate_policy.py as the canonical gate module, then has both
+  paths import from it instead of duplicating logic.
+
+non_goals:
+  - Do not enable live execution.
+  - Do not modify approval flow.
+  - Do not change gate behavior (only restructure).
+  - Do not cover D012 in this experiment (deferred to P1).
+
+scope:
+  allowed:
+    - Create scripts/gate_policy.py with shared gate functions
+    - Modify local_marker_executor.py to import from gate_policy
+    - Modify local_execution_worker.py to import from gate_policy
+    - Run regression suite to verify no behavior change
+    - Run all smoke test suites
+  forbidden:
+    - Do not enable live execution
+    - Do not change gate logic (only restructure)
+    - Do not modify approval flow
+    - Do not add new gate checks (only extract existing ones)
+
+architecture:
+  shared_gate_policy:
+    - flags_from_env()
+    - validate_task_gates(task, flags, paths)
+    - validate_live_enabled(flags)
+    - validate_scope(flags)
+    - validate_idempotency(task)
+    - validate_rollback_plan(task)
+    - validate_risk_class(task)
+    - sanitize_text(value)
+    - redact_secrets(value)
+  marker_executor:
+    - imports validate_task_gates from gate_policy
+    - applies marker-specific checks (marker already exists, etc.)
+  worker_daemon:
+    - imports validate_task_gates from gate_policy
+    - applies worker-only checks (arm gate exists, arm gate consumed, etc.)
+
+constraints:
+  behavior_change_allowed: false
+  import_safe: true
+  c001_pass_definition: |
+    marker_executor and worker_daemon core permission checks
+    both go through gate_policy.validate_task_gates().
+    Worker-only arm gate stays separate (worker-only operational gate).
+
+success_criteria:
+  - gate_policy.py exists with shared gate functions
+  - Both paths call gate_policy.validate_task_gates() for core gates
+  - gate_policy.py is import-safe (no I/O, no daemon, no CLI, no queue)
+  - 004 regression suite: 24/24 pass (no behavior change)
+  - All 6 smoke test suites pass
+  - C001 upgrades from partial to pass
+  - No new divergent cases introduced
+
+models:
+  claude-code:
+    role: "Extract shared gate policy"
+  gpt:
+    role: "Review extraction architecture"
+  codex:
+    role: "Verify no regression"

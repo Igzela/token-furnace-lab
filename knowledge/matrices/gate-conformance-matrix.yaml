@@ -1,8 +1,8 @@
 id: hermes-gate-conformance-matrix
 name: Gate Conformance Matrix
-experiment: hermes-perm-audit-004
+experiment: hermes-perm-audit-005
 generated: 2026-05-27
-updated: 2026-05-27T20:15:00
+updated: 2026-05-27T21:45:00
 
 # Tests whether worker_daemon path conforms to marker_executor canonical path
 # Updated after 003 fixes
@@ -15,14 +15,16 @@ conformance_cases:
   - id: C001
     name: worker uses canonical gate function
     expected: true
-    actual: partial
-    status: partial
+    actual: true
+    status: pass
     evidence:
-      - local_execution_worker.py imports flags_from_env from local_marker_executor
-      - check_worker_gates adds all canonical gate checks (LIVE_ENABLED, idempotency, risk_class, rollback_plan)
-      - Still uses independent check_worker_gates function (not delegating to check_gates)
-      - Behavioral equivalence achieved for all P0 cases
+      - gate_policy.py extracted as single source of truth for canonical gates
+      - Both marker_executor.check_gates() and worker.check_worker_gates() call gate_policy.validate_task_gates()
+      - Worker-only arm gate checks remain in worker (operational, not policy)
+      - Marker-only marker-exists check remains in marker
+      - 24/24 regression tests pass, all smoke tests pass
     severity: critical
+    experiment: hermes-perm-audit-005
 
   - id: C002
     name: worker independent gate covers all marker gates
@@ -201,9 +203,9 @@ per_case_conformance:
 summary:
   conformance_cases:
     total: 6
-    pass: 5
+    pass: 6
     fail: 0
-    partial: 1
+    partial: 0
     untested: 0
   per_case:
     total: 25
@@ -222,4 +224,5 @@ summary:
     - "D012: idempotency key presence check added (match still partial)"
     - "D014/D015: rollback_plan field and gate check added"
     - "D024: secret redaction in sanitize_text"
-  verdict: "0/25 cases diverge. Regression suite: 24/24 pass. C001 partial (independent function), C002-C006 pass."
+    - "C001: gate_policy.py extracted, both paths delegate to validate_task_gates()"
+  verdict: "0/25 cases diverge. Regression suite: 24/24 pass. C001-C006 all pass. Shared gate_policy.py is single source of truth."

@@ -1,0 +1,50 @@
+id: hermes-perm-audit-005
+experiment_id: hermes-perm-audit-005
+created: 2026-05-27T21:00:00
+completed: 2026-05-27T21:45:00
+operator: claude-code
+target: /home/igzela/Projects/hermes-gateway-lab
+
+status: COMPLETE
+
+verdicts:
+  experiment_verdict: COMPLETE
+  target_control_verdict: PASS
+  reason: |
+    gate_policy.py extracted as single source of truth.
+    Both paths delegate to validate_task_gates() for core gates.
+    24/24 regression tests pass. All smoke tests pass.
+    C001 upgraded from partial to pass. No behavior change.
+
+constraints:
+  behavior_change_allowed: false
+  import_safe: true
+
+deliverables:
+  - scripts/gate_policy.py (shared gate module)
+  - Modified scripts/local_marker_executor.py
+  - Modified scripts/local_execution_worker.py
+  - model-outputs/claude-code-policy-extractor.md
+  - model-outputs/gpt-extraction-reviewer.md
+  - model-outputs/codex-regression-verifier.md
+  - synthesis/comparison.md
+  - synthesis/decision-record.md
+  - synthesis/cost_estimate.md
+
+test_results:
+  regression_suite:
+    total: 24
+    passed: 24
+    failed: 0
+    verdict: PASS
+  smoke_tests:
+    live4c: PASS
+    live6: PASS
+    live7: 34/34 PASS
+    live9c: 12/12 PASS
+    live9d: 11/11 PASS
+
+c001_upgrade:
+  before: partial
+  after: pass
+  evidence: Both paths call gate_policy.validate_task_gates()
