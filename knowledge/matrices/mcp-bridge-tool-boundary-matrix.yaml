@@ -1,0 +1,167 @@
+id: mcp-bridge-tool-boundary-matrix
+name: "MCP Bridge Tool Boundary Conformance Matrix"
+version: 1
+created: 2026-05-28
+experiment: mcp-bridge-boundary-audit-001
+
+groups:
+  - id: http-boundary
+    name: "HTTP Endpoint Boundary"
+    cases:
+      - id: M001
+        name: "Path secret required"
+        priority: P0
+        status: PASS
+        evidence: "Line 261-265: H2B_PATH_SECRET required, expected_path = f'/mcp/{secret}'"
+        conformance: "Static + mock verified"
+        follow_up: null
+
+      - id: M002
+        name: "Only POST accepted on /mcp/<secret>"
+        priority: P0
+        status: PASS
+        evidence: "Line 170-180: do_GET returns 405 on /mcp/<secret>"
+        conformance: "Static + mock verified"
+        follow_up: null
+
+      - id: M003
+        name: "Malformed JSON-RPC denied safely"
+        priority: P0
+        status: PASS
+        evidence: "Line 188-194: json.loads exception returns 400"
+        conformance: "Static + mock verified"
+        follow_up: null
+
+  - id: tool-boundary
+    name: "Tool Allowlist Boundary"
+    cases:
+      - id: M004
+        name: "tools/list filters to allowed tools"
+        priority: P0
+        status: PASS
+        evidence: "Line 211-228: filters to ALLOWED_TOOLS"
+        conformance: "Static + mock verified"
+        follow_up: null
+
+      - id: M005
+        name: "Hidden tools not exposed in tools/list"
+        priority: P0
+        status: PASS
+        evidence: "Line 217: tool.get('name') not in ALLOWED_TOOLS"
+        conformance: "Static + mock verified"
+        follow_up: null
+
+      - id: M006
+        name: "Direct hidden tool call denied before forward"
+        priority: P0
+        status: PASS
+        evidence: "Mock test confirms deny before forward, no stdio call"
+        conformance: "Mock verified"
+        follow_up: null
+
+      - id: M007
+        name: "Allowed tools forwarded correctly"
+        priority: P0
+        status: PASS
+        evidence: "Mock test confirms forward + audit recording"
+        conformance: "Mock verified"
+        follow_up: null
+
+      - id: M013
+        name: "Hidden tools/call deny before forward (direct)"
+        priority: P0
+        status: PASS
+        evidence: "M006 mock test covers this case"
+        conformance: "Mock verified"
+        follow_up: null
+
+      - id: M014
+        name: "Allowed tool argument boundary"
+        priority: P1
+        status: PASS_WITH_NOTES
+        evidence: "Arguments forwarded without semantic validation; no escalation shown but limited enforcement"
+        conformance: "Static verified"
+        follow_up: "Runtime verification in 002"
+
+  - id: subprocess-boundary
+    name: "Stdio Subprocess Boundary"
+    cases:
+      - id: M008
+        name: "stdio lifecycle controlled"
+        priority: P1
+        status: PARTIAL
+        evidence: "Line 150-160: terminate/kill on shutdown, but no spawn validation"
+        conformance: "Static only"
+        follow_up: "Runtime verification in 002"
+
+      - id: M009
+        name: "stdio response filtering (hermes metadata leakage)"
+        priority: P0
+        status: PASS_WITH_NOTES
+        evidence: "Mock verified filtering; real hermes metadata not runtime-verified"
+        conformance: "Mock verified"
+        follow_up: "Runtime verification in 002"
+
+      - id: M015
+        name: "Session/request isolation"
+        priority: P1
+        status: UNKNOWN
+        evidence: "Single bridge instance, shared state; not tested"
+        conformance: "Not tested"
+        follow_up: "Runtime verification in 002"
+
+      - id: M016
+        name: "Oversized payload handling"
+        priority: P1
+        status: PARTIAL
+        evidence: "Malformed JSON covered; oversized payload not tested"
+        conformance: "Partial"
+        follow_up: "Runtime verification in 002"
+
+  - id: audit-boundary
+    name: "Audit Boundary"
+    cases:
+      - id: M010
+        name: "Denied request audited"
+        priority: P0
+        status: PASS
+        evidence: "Line 140-144: record_rejected()"
+        conformance: "Static + mock verified"
+        follow_up: null
+
+      - id: M011
+        name: "Forwarded request audited"
+        priority: P0
+        status: PASS
+        evidence: "Line 146-148: record_forwarded_tool_call()"
+        conformance: "Static + mock verified"
+        follow_up: null
+
+      - id: M012
+        name: "Raw arguments not persisted in audit"
+        priority: P0
+        status: PASS
+        evidence: "Mock test confirms audit JSON doesn't contain raw arguments"
+        conformance: "Mock verified"
+        follow_up: null
+
+summary:
+  total: 16
+  pass: 11
+  pass_with_notes: 2
+  partial: 2
+  unknown: 1
+  fail: 0
+
+known_gaps:
+  - "Session isolation (M015) not tested"
+  - "Stdio subprocess failure modes (M008) partially tested"
+  - "Oversized payload (M016) not tested"
+  - "Real hermes mcp serve metadata leakage (M009) not runtime-verified"
+  - "Allowed tool argument semantic validation (M014) limited"
+
+consistency_checks:
+  - "All P0 cases: PASS"
+  - "No FAIL status"
+  - "Unknown cases: M015 only"
+  - "Follow-up items map to mcp-bridge-boundary-audit-002"

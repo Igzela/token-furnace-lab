@@ -1,0 +1,112 @@
+id: mcp-bridge-boundary-audit-001
+name: "MCP Bridge Tool Boundary Discovery Audit"
+type: audit
+status: planned
+created: 2026-05-27
+
+target:
+  repo: Igzela/hermes-gateway-lab
+  local_path: ~/Projects/hermes-gateway-lab
+  write_scope:
+    allowed:
+      - read bridge code
+      - create experiment artifacts in token-furnace-lab
+    forbidden:
+      - modify bridge code
+      - enable live execution
+      - expose bridge outside localhost
+      - change path secret
+
+objective:
+  primary: >
+    Map and audit the MCP bridge tool boundary, including HTTP JSON-RPC input,
+    path-secret validation, tool allowlist filtering, hidden tool suppression,
+    stdio subprocess boundary, and audit logging.
+  non_goals:
+    - do not fix bridge code in 001
+    - do not expose bridge outside localhost
+    - do not perform live tool calls that write or mutate state
+
+core_question: >
+  Can an HTTP JSON-RPC request cross the bridge boundary and reach a hidden,
+  write-capable, or unauthorized MCP tool?
+
+healthy_failure:
+  allowed: true
+  expected_if:
+    - hidden tools are reachable
+    - path secret can be bypassed
+    - allowlist filtering is incomplete
+    - audit logging leaks secret-bearing payloads
+
+scope:
+  allowed:
+    - static analysis of bridge code
+    - non-write fixture-level testing
+    - localhost-only testing with fake secrets
+  forbidden:
+    - live tool calls that write or mutate state
+    - external exposure via Cloudflare tunnel
+    - real secret usage
+
+models:
+  claude-code:
+    role: "Read bridge code, collect evidence, map boundaries"
+  gpt:
+    role: "Design audit matrix, review findings, produce synthesis"
+
+matrices:
+  required:
+    - path: knowledge/matrices/mcp-bridge-tool-boundary-matrix.yaml
+      purpose: "Map all boundary cases and their expected behavior"
+
+verdicts:
+  experiment_verdict:
+    type: COMPLETE | INCOMPLETE
+    complete_if:
+      - boundary map created
+      - all 12 cases evaluated
+      - evidence collected for each case
+  target_control_verdict:
+    type: PASS | PASS_WITH_NOTES | FAIL
+    pass_if:
+      - all P0 cases pass
+      - no hidden tools reachable
+      - path secret cannot be bypassed
+    pass_with_notes_if:
+      - P0 cases pass but P1 cases have warnings
+    fail_if:
+      - any P0 case fails
+      - hidden tools reachable via bridge
+
+success_criteria:
+  experiment_success:
+    - boundary map created with 12 cases
+    - evidence collected for each case
+    - synthesis produced with findings
+  target_success:
+    - all P0 cases pass
+    - no unauthorized tool access possible
+
+safety:
+  secret_policy:
+    real_secrets_allowed: false
+    redaction_required: true
+    placeholder_format:
+      - <REDACTED_SECRET>
+      - <REDACTED_PATH_SECRET>
+  live_execution:
+    allowed: false
+  destructive_operations:
+    allowed: false
+
+outputs:
+  run_artifacts:
+    - runs/mcp-bridge-boundary-audit-001/<timestamp>/
+  knowledge_updates:
+    - knowledge/matrices/mcp-bridge-tool-boundary-matrix.yaml
+    - knowledge/wiki/mcp-bridge-boundary-model.md
+
+next_experiment:
+  recommended_if_pass: mcp-bridge-boundary-audit-002
+  recommended_if_fail: mcp-bridge-boundary-fix-001
