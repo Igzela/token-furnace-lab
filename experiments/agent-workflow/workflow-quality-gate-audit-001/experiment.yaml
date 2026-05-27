@@ -1,0 +1,138 @@
+id: workflow-quality-gate-audit-001
+name: "Workflow Quality-Gate Audit"
+type: audit
+status: planned
+created: 2026-05-28
+
+target:
+  repo: Igzela/token-furnace-lab
+  local_path: ~/Projects/token-furnace-lab
+  secondary_targets:
+    - repo: Igzela/hermes-gateway-lab
+      purpose: "Sample prior phase artifacts for workflow compliance"
+
+objective:
+  primary: >
+    Audit and validate the Claude/Codex/GPT multi-agent workflow used by
+    Token Furnace Lab. Verify that methodology templates, quality gates,
+    and verdict mechanisms actually constrain workflow execution, not just
+    document intended behavior.
+  non_goals:
+    - do not re-audit Hermes gate_policy
+    - do not re-audit MCP bridge allowlist
+    - do not modify target project business code
+    - do not introduce new runtime features
+    - do not evaluate public internet / multi-user / production deployment
+
+core_question: >
+  Can the Claude/Codex/GPT workflow reliably convert model outputs into
+  evidence-backed, matrix-tracked, regression-protected conclusions
+  without false PASS, scope drift, or unverified claims?
+
+healthy_failure:
+  allowed: true
+  expected_if:
+    - gates are documented but not enforced
+    - matrix consistency is manual-only
+    - verdicts can be produced without evidence
+    - model handoff loses uncertainty
+    - fix phases skip regression
+
+scope:
+  allowed:
+    - read all templates, configs, prior phase artifacts
+    - sample hermes-perm-audit and mcp-bridge-boundary-audit runs
+    - create experiment artifacts in token-furnace-lab
+  forbidden:
+    - modify hermes-gateway-lab code
+    - modify token-furnace-lab templates (audit only, fix in 002)
+    - start live execution
+    - create new runtime features
+
+models:
+  claude-code:
+    role: "Read templates, collect workflow evidence, map gate coverage"
+  gpt:
+    role: "Design quality-gate matrix, review findings, produce synthesis"
+
+matrices:
+  required:
+    - path: knowledge/matrices/workflow-quality-gate-matrix.yaml
+      purpose: "30-case workflow quality-gate conformance matrix"
+
+verdicts:
+  experiment_verdict:
+    type: COMPLETE | INCOMPLETE
+    complete_if:
+      - W001-W030 all classified
+      - sampled hermes and mcp bridge phases
+      - all FAIL/WARN in known gaps
+  target_control_verdict:
+    type: PASS | PASS_WITH_NOTES | FAIL
+    pass_if:
+      - no false PASS found in prior closeouts
+      - all accepted findings have evidence
+      - fix phases have regression
+      - matrix summary counts match cases
+      - model outputs don't directly determine PASS without matrix
+    pass_with_notes_if:
+      - P0 gates pass but P1 gates have warnings
+    fail_if:
+      - any PASS condition violated
+  platform_validation_verdict:
+    type: PASS | PASS_WITH_NOTES | FAIL
+
+success_criteria:
+  experiment_success:
+    - workflow asset inventory complete
+    - experiment lifecycle compliance map created
+    - gate coverage against W001-W030 documented
+    - strong gates identified with examples
+    - weak or manual-only gates identified
+    - no-write confirmation for token-furnace-lab
+  target_success:
+    - methodology templates actually constrain workflow
+    - quality gates are enforceable, not just documented
+
+safety:
+  scope: "Read-only audit of workflow, no code changes"
+
+test_groups:
+  - id: WGA
+    name: "Experiment Definition Gates"
+    cases: [W001, W002, W003, W004, W005]
+
+  - id: WGB
+    name: "Evidence and File-State Gates"
+    cases: [W006, W007, W008, W009, W010]
+
+  - id: WGC
+    name: "Matrix and Verdict Gates"
+    cases: [W011, W012, W013, W014, W015, W016]
+
+  - id: WGD
+    name: "Multi-Agent Handoff Gates"
+    cases: [W017, W018, W019, W020, W021]
+
+  - id: WGE
+    name: "Fix and Regression Gates"
+    cases: [W022, W023, W024, W025, W026]
+
+  - id: WGF
+    name: "Closeout and Knowledge Deposition Gates"
+    cases: [W027, W028, W029, W030]
+
+outputs:
+  run_artifacts:
+    - runs/workflow-quality-gate-audit-001/<timestamp>/
+  knowledge_updates:
+    - knowledge/matrices/workflow-quality-gate-matrix.yaml
+    - knowledge/wiki/token-furnace-workflow-quality-gates.md
+    - knowledge/decisions/DR-workflow-quality-gate-baseline.md
+    - knowledge/evaluator-rules/ER-no-false-pass-from-model-output.md
+    - knowledge/evaluator-rules/ER-fix-requires-regression.md
+
+next_experiment:
+  recommended_if_pass: workflow-quality-gate-audit-002
+  recommended_if_fail: workflow-quality-gate-fix-001
+  note: "001 audits; 002 implements validator scripts if many gates are manual-only"

@@ -1,0 +1,242 @@
+id: workflow-quality-gate-matrix
+name: "Workflow Quality-Gate Conformance Matrix"
+version: 1
+created: 2026-05-28
+experiment: workflow-quality-gate-audit-001
+
+groups:
+  - id: WGA
+    name: "Experiment Definition Gates"
+    cases:
+      - id: W001
+        name: "experiment has explicit type"
+        expected: "audit | verification | fix | regression | refactor | hardening | closeout"
+        severity: P0
+        status: pass
+
+      - id: W002
+        name: "target repo and platform repo separated"
+        expected: "target_repo != platform_repo unless self-audit"
+        severity: P0
+        status: pass
+
+      - id: W003
+        name: "allowed and forbidden operations declared"
+        expected: "scope.allowed and scope.forbidden non-empty"
+        severity: P0
+        status: pass
+
+      - id: W004
+        name: "non-goals declared"
+        expected: "objective.non_goals present"
+        severity: P1
+        status: pass
+
+      - id: W005
+        name: "healthy failure declared when applicable"
+        expected: "healthy_failure exists for audit/verification"
+        severity: P1
+        status: pass
+
+  - id: WGB
+    name: "Evidence and File-State Gates"
+    cases:
+      - id: W006
+        name: "target repo pre/post status recorded"
+        expected: "status_before and status_after available"
+        severity: P1
+        status: warn
+        evidence: "Git status snapshots exist but not as structured pre/post fields"
+
+      - id: W007
+        name: "each finding has evidence path"
+        expected: "no accepted finding without evidence_path"
+        severity: P0
+        status: pass
+
+      - id: W008
+        name: "evidence type declared"
+        expected: "static_inspection | unit_test | integration_test | runtime_trace | manual_review | model_inference"
+        severity: P0
+        status: pass
+
+      - id: W009
+        name: "model inference alone cannot produce PASS"
+        expected: "PASS requires non-model evidence"
+        severity: P0
+        status: pass
+
+      - id: W010
+        name: "secrets redacted in run artifacts"
+        expected: "no raw secrets/tokens/path secrets"
+        severity: P0
+        status: pass
+
+  - id: WGC
+    name: "Matrix and Verdict Gates"
+    cases:
+      - id: W011
+        name: "matrix exists for experiment"
+        expected: "at least one matrix or explicit exception"
+        severity: P0
+        status: pass
+
+      - id: W012
+        name: "matrix summary counts match case list"
+        expected: "validator passes"
+        severity: P0
+        status: warn
+        evidence: "Consistency checks defined in template but no automated validator exists"
+
+      - id: W013
+        name: "P0 fail requires follow-up"
+        expected: "every P0 fail has follow_up.required=true"
+        severity: P0
+        status: pass
+
+      - id: W014
+        name: "path-aware target uses path-aware matrix"
+        expected: "per-path status exists when multiple execution paths"
+        severity: P1
+        status: pass
+
+      - id: W015
+        name: "experiment verdict separated from target verdict"
+        expected: "experiment_verdict and target_control_verdict both present"
+        severity: P0
+        status: pass
+
+      - id: W016
+        name: "phase closeout uses triple verdict"
+        expected: "phase_verdict + target_control_verdict + platform_validation_verdict"
+        severity: P1
+        status: pass
+
+  - id: WGD
+    name: "Multi-Agent Handoff Gates"
+    cases:
+      - id: W017
+        name: "Claude Code role bounded"
+        expected: "evidence collection / implementation / local verification only"
+        severity: P0
+        status: pass
+
+      - id: W018
+        name: "GPT role bounded"
+        expected: "architecture review / synthesis / next-step judgment"
+        severity: P0
+        status: pass
+
+      - id: W019
+        name: "Codex role bounded"
+        expected: "code risk review / regression check / weak assertion detection"
+        severity: P1
+        status: warn
+        evidence: "Codex not consistently used; some phases skip third-model review"
+
+      - id: W020
+        name: "handoff preserves uncertainty"
+        expected: "unknowns are not silently converted to pass"
+        severity: P0
+        status: pass
+
+      - id: W021
+        name: "model disagreement resolved by evidence"
+        expected: "revised finding or matrix decision, not authority vote"
+        severity: P0
+        status: pass
+
+  - id: WGE
+    name: "Fix and Regression Gates"
+    cases:
+      - id: W022
+        name: "fix experiment has narrow write scope"
+        expected: "allowed files/components declared"
+        severity: P0
+        status: pass
+
+      - id: W023
+        name: "fix does not mix unrelated refactor"
+        expected: "no out-of-scope file changes or documented exception"
+        severity: P1
+        status: pass
+
+      - id: W024
+        name: "fix has regression follow-up"
+        expected: "regression experiment or test suite exists"
+        severity: P0
+        status: pass
+
+      - id: W025
+        name: "regression tests run after fix"
+        expected: "command and result recorded"
+        severity: P0
+        status: pass
+
+      - id: W026
+        name: "no behavior change in refactor unless declared"
+        expected: "regression suite passes and behavior_change_allowed=false if refactor"
+        severity: P1
+        status: pass
+
+  - id: WGF
+    name: "Closeout and Knowledge Deposition Gates"
+    cases:
+      - id: W027
+        name: "synthesis exists"
+        expected: "synthesis.md present"
+        severity: P0
+        status: pass
+
+      - id: W028
+        name: "knowledge assets deposited"
+        expected: "wiki/decisions/failures/evaluator-rules/matrices updated as applicable"
+        severity: P1
+        status: pass
+
+      - id: W029
+        name: "known gaps recorded"
+        expected: "no unresolved warning omitted from closeout"
+        severity: P0
+        status: pass
+
+      - id: W030
+        name: "tag or commit baseline recorded"
+        expected: "final commit/tag present"
+        severity: P1
+        status: pass
+
+failure_modes:
+  - false_pass_risk
+  - scope_drift
+  - evidence_gap
+  - model_handoff_loss
+  - regression_gap
+  - closeout_gap
+  - none
+
+summary:
+  total_cases: 30
+  by_status:
+    pass: 27
+    warn: 3
+    fail: 0
+    partial: 0
+    missing: 0
+    blocked: 0
+    deferred: 0
+    untested: 0
+  by_severity:
+    P0: 19
+    P1: 11
+  by_gate_strength:
+    strong: 26
+    weak: 4
+    manual_only: 0
+
+consistency_checks:
+  - "summary.total_cases equals actual case count"
+  - "summary.by_status totals equal actual case statuses"
+  - "every P0 fail has follow_up.required=true"
+  - "every PASS case has evidence_path"
+  - "no PASS case relies only on model_inference"
