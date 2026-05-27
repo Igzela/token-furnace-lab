@@ -162,8 +162,7 @@ def run_simulation(cfg: SweepConfig, sp: SystemParams = None,
 
         # Iq from electrical power command:
         # Pavg = 1.5 * (Rs*Iq + Vemf_q) * Iq
-        # Quadratic: 1.5*Rs*Iq² + 1.5*Vemf_q*Iq - Pavg = 0
-        # APD losses are a DC-link burden (drawn from capacitor), not a motor burden
+        # APD losses are a DC-link burden (drawn from capacitor), not motor burden
         a_q = 1.5 * motor.Rs
         b_q = 1.5 * Vemf_q
         disc = b_q * b_q + 4.0 * a_q * Pavg
@@ -180,7 +179,7 @@ def run_simulation(cfg: SweepConfig, sp: SystemParams = None,
         Iq_cmd = min(Iq_cmd, motor.I_rated)
 
         # Track if voltage-limited (compared to unrated Iq from power command)
-        Iq_unrated = (-b_q + math.sqrt(b_q * b_q + 4.0 * a_q * Pavg_total)) / (2.0 * a_q) if disc > 0 and a_q > 0.01 else 0.0
+        Iq_unrated = (-b_q + math.sqrt(b_q * b_q + 4.0 * a_q * Pavg)) / (2.0 * a_q) if disc > 0 and a_q > 0.01 else 0.0
         if Iq_cmd < Iq_unrated - 0.01:
             n_iq_limited += 1
 

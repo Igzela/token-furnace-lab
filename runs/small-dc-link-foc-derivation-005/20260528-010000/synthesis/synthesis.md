@@ -9,6 +9,7 @@
 - A joint simulation run exists for FOC + APD + 22uF DC-link behavior.
 - GPT found material model bugs in the first result.
 - The first "0/486 pass" conclusion must not be used as a design decision.
+- `model_outputs/simulation_model.py` has a follow-up correction for APD-loss-inclusive `Pavg_total`; the recorded sweep outputs need rerun verification against that code.
 - Any final conclusion about 300W feasibility must wait for corrected-model verification.
 
 ## What Is Not Yet Accepted
