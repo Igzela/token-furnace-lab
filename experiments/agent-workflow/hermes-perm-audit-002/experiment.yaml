@@ -1,0 +1,123 @@
+id: hermes-perm-audit-002
+name: "Hermes Gateway Lab Deny-Path Implementation Audit"
+type: agent-workflow
+created: 2026-05-27
+status: active
+depends_on: hermes-perm-audit-001
+
+objective: |
+  Verify that Hermes Gateway Lab denies unsafe or under-authorized execution
+  requests by default. Convert the 25-case deny-path matrix into executable
+  or inspectable evidence, verified per execution path (marker_executor vs worker_daemon).
+
+scope:
+  allowed:
+    - Read target repo files
+    - Create test fixtures
+    - Create deny-path tests or validators
+    - Run non-live tests
+    - Update Token Furnace Lab run artifacts
+    - Update deny-path matrix statuses
+  forbidden:
+    - Do not enable live execution
+    - Do not execute live actions
+    - Do not patch production worker behavior
+    - Do not write secrets, cookies, tokens, or raw env dumps
+    - Do not use ChatGPT approval as local execution authority
+    - Do not force push or rewrite main branch history
+
+core_question: |
+  Does the target system fail closed when required live execution gates are
+  missing, expired, malformed, or unsafe? And do both execution paths
+  (marker_executor and worker_daemon) produce equivalent deny decisions?
+
+models:
+  gpt-architect:
+    role: "Test architecture reviewer"
+    prompt: prompts/gpt-test-architecture-reviewer.md
+  claude-code-repo-reader:
+    role: "Deny-path implementer and evidence collector"
+    prompt: prompts/claude-code-deny-path-implementer.md
+  codex-risk-reviewer:
+    role: "Code-level deny-path risk reviewer"
+    prompt: prompts/codex-deny-path-risk-reviewer.md
+
+p0_cases:
+  - D001: LIVE_ENABLED missing
+  - D002: LIVE_ENABLED=false
+  - D004: scope not allowed
+  - D005: missing local approval
+  - D006: ChatGPT-only approval
+  - D007: approval TTL expired
+  - D010: missing idempotency key
+  - D014: missing rollback plan
+  - D018/D019: R4/R5 requested
+  - D022/D023: audit write fail closed
+  - D024: secret-like reason deny_or_redact
+
+verdicts:
+  experiment_verdict:
+    type: COMPLETE / INCOMPLETE
+    required:
+      - Matrix exists and all 25 cases are classified
+      - Every P0 case has evidence
+      - All generated tests/validators are non-live
+      - Target repo before/after dirty state recorded
+      - No secret-like values persisted unredacted
+      - Final synthesis separates experiment result from target control verdict
+  target_control_verdict:
+    type: PASS / PASS_WITH_NOTES / FAIL
+    pass_only_if:
+      - All P0 deny cases pass
+      - Worker and canonical executor produce equivalent deny decisions for P0
+      - No documented live gate is missing in worker path
+      - Audit logging fails closed or safely redacts
+      - No production code was patched during 002
+    pass_with_notes_when:
+      - Matrix and tests established
+      - Some P1/P2 cases deferred
+      - P0 mostly pass, non-critical evidence gaps remain
+      - No live bypass found
+    fail_when:
+      - Any P0 deny case allows execution
+      - Worker path ignores LIVE_ENABLED=false
+      - ChatGPT-only approval can authorize local execution
+      - Missing rollback or idempotency key still allows execution
+      - R4/R5 request accepted
+      - Audit write failure allows execution without evidence
+      - Secret-like reason persists unredacted
+
+healthy_minimum_outcome:
+  experiment_verdict: COMPLETE
+  target_control_verdict: FAIL
+  reason: deny-path tests confirm worker gate drift
+  next: 003 fixes worker to import canonical gate logic
+
+prohibited_operations:
+  - modifying local_execution_worker.py
+  - modifying local_marker_executor.py
+  - enabling live execution
+  - running any live execution path
+
+rubric:
+  dimensions:
+    matrix_coverage:
+      weight: 25
+      pass: all 25 cases classified, no case unreviewed
+      fail: any P0 case remains untested without reason
+    p0_deny_behavior:
+      weight: 35
+      pass: all P0 cases deny or redact as expected
+      fail: any P0 case allows execution or worker bypasses canonical gate
+    evidence_quality:
+      weight: 15
+      pass: each tested case has fixture, command, expected/actual, evidence path
+      fail: claims not tied to files or test output
+    safety_boundary:
+      weight: 15
+      pass: no live execution, no side effects, no secret leakage
+      fail: live action performed, secret persisted, unapproved patch mixed in
+    synthesis_quality:
+      weight: 10
+      pass: separates experiment status from target verdict, records accepted/rejected
+      fail: reports PASS despite unresolved critical gaps

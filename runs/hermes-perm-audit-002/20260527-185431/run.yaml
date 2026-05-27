@@ -1,0 +1,17 @@
+experiment_id: hermes-perm-audit-002
+furnace_git:
+  branch: exp/hermes-perm-audit-001
+  commit: 24643363a8fb4355b64b8836c3ecd9d31138304d
+  dirty: 'M knowledge/matrices/deny-path-matrix.yaml
+
+    ?? experiments/agent-workflow/hermes-perm-audit-002/
+
+    ?? runs/hermes-perm-audit-002/'
+operator: igzela
+status: created
+target_git:
+  branch: main
+  commit: 77cf282114ca7ddbac370e204e580248eeb99bcf
+  dirty: M drafts/hermes-local-execution-worker.service.draft
+target_repo: /home/igzela/Projects/hermes-gateway-lab
+timestamp: 20260527-185431

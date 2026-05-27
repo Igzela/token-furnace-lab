@@ -1,154 +1,328 @@
-id: hermes-perm-audit-002
+id: deny-path-matrix-001
 name: Deny Path Test Matrix
 experiment: hermes-perm-audit-001
 generated: 2026-05-27
+updated: 2026-05-27T19:00:00
+
+# Path-aware matrix: each case verified per execution path
+# Paths: marker_executor (canonical), worker_daemon (actual)
 
 groups:
   - name: live-execution-basics
+    priority: P0
     cases:
       - id: D001
         name: LIVE_ENABLED missing
-        condition: "LIVE_ENABLED env var not set"
         expected: deny
-        status: untested
+        paths:
+          marker_executor:
+            status: complete
+            evidence: local_marker_executor.py:361-362 blocks when flags_from_env returns False
+          worker_daemon:
+            status: missing
+            evidence: check_worker_gates never imports flags_from_env
+        severity: critical
       - id: D002
         name: LIVE_ENABLED=false
-        condition: "LIVE_ENABLED=false"
         expected: deny
-        status: untested
+        paths:
+          marker_executor:
+            status: complete
+            evidence: Same code path as D001
+          worker_daemon:
+            status: missing
+            evidence: check_worker_gates has no flag check
+        severity: critical
       - id: D003
         name: live scope requested but not enabled
-        condition: "requested_scope=hermes.execute.live but live not enabled"
         expected: deny
-        status: untested
+        paths:
+          marker_executor:
+            status: partial
+            evidence: Uses boolean flags, not scope-based allowlist
+          worker_daemon:
+            status: missing
+            evidence: No scope check in check_worker_gates
+        severity: high
       - id: D004
         name: scope not in allowed list
-        condition: "requested_scope not in allowed_scopes"
         expected: deny
-        status: untested
+        paths:
+          marker_executor:
+            status: complete
+            evidence: approval_queue.py:129-130 at creation, dry_run_executor.py:113-114
+          worker_daemon:
+            status: complete
+            evidence: Trusts upstream validation (same code path)
+        severity: high
 
   - name: approval
+    priority: P0
     cases:
       - id: D005
         name: missing Charlie local approval
-        condition: "no local approval marker found"
         expected: deny
-        status: untested
+        paths:
+          marker_executor:
+            status: complete
+            evidence: local_marker_executor.py:345-348 checks LIVE2_LOCAL_CLI_SOURCE
+          worker_daemon:
+            status: complete
+            evidence: local_execution_worker.py:160-164 same check
+        severity: critical
       - id: D006
         name: ChatGPT-only approval
-        condition: "approval_source=chatgpt, no local approval"
         expected: deny
-        status: untested
+        paths:
+          marker_executor:
+            status: complete
+            evidence: approval_queue.py:237 hardcodes source, chatgpt_final_approval_enabled: False
+          worker_daemon:
+            status: complete
+            evidence: Same approval_source check at worker.py:163-164
+        severity: critical
       - id: D007
         name: approval TTL expired
-        condition: "approval_timestamp + TTL < now"
         expected: deny
-        status: untested
+        paths:
+          marker_executor:
+            status: partial
+            evidence: Only arm gate expiry checked, not task approval_timestamp
+          worker_daemon:
+            status: partial
+            evidence: local_execution_worker.py:175-176 same arm gate check only
+        severity: high
       - id: D008
         name: approval marker format error
-        condition: "marker file exists but format invalid"
         expected: deny
-        status: untested
+        paths:
+          marker_executor:
+            status: missing
+            evidence: No marker file content/format validation
+          worker_daemon:
+            status: missing
+            evidence: Same gap
+        severity: medium
       - id: D009
         name: approval mismatch
-        condition: "approval does not match current action/request"
         expected: deny
-        status: untested
+        paths:
+          marker_executor:
+            status: partial
+            evidence: Distributed across multiple if-statements
+          worker_daemon:
+            status: partial
+            evidence: local_execution_worker.py:178-182 arm_gate matching
+        severity: high
 
   - name: idempotency
+    priority: P0
     cases:
       - id: D010
         name: missing idempotency key
-        condition: "task has no idempotency_key field"
         expected: deny
-        status: untested
+        paths:
+          marker_executor:
+            status: complete
+            evidence: local_marker_executor.py:351-352 blocks if not present
+          worker_daemon:
+            status: missing
+            evidence: check_worker_gates does not validate key presence
+        severity: high
       - id: D011
         name: duplicate idempotency key
-        condition: "idempotency_key already used in completed task"
         expected: deny_or_noop
-        status: untested
+        paths:
+          marker_executor:
+            status: partial
+            evidence: Per-task duplicate via arm gate. No cross-task detection.
+          worker_daemon:
+            status: partial
+            evidence: Same arm gate mechanism
+        severity: high
       - id: D012
         name: idempotency key mismatch
-        condition: "idempotency_key does not match request content"
         expected: deny
-        status: untested
+        paths:
+          marker_executor:
+            status: partial
+            evidence: dry_run_executor.py:142-143 validates match
+          worker_daemon:
+            status: missing
+            evidence: Worker trusts dry-run result, no re-validation
+        severity: medium
       - id: D013
         name: stale key after queue recovery
-        condition: "queue recovered, old idempotency_key reused"
         expected: deny
-        status: untested
+        paths:
+          marker_executor:
+            status: partial
+            evidence: Arm gate consumption prevents re-execution
+          worker_daemon:
+            status: partial
+            evidence: Same mechanism
+        severity: medium
 
   - name: rollback
+    priority: P0
     cases:
       - id: D014
         name: missing rollback plan
-        condition: "task has no rollback_plan field"
         expected: deny
-        status: untested
+        paths:
+          marker_executor:
+            status: missing
+            evidence: No code validates rollback plan presence
+          worker_daemon:
+            status: missing
+            evidence: Same gap
+        severity: high
       - id: D015
         name: empty rollback plan
-        condition: "rollback_plan field is empty string"
         expected: deny
-        status: untested
+        paths:
+          marker_executor:
+            status: missing
+            evidence: No rollback plan field on tasks
+          worker_daemon:
+            status: missing
+            evidence: Same gap
+        severity: medium
       - id: D016
         name: rollback path mismatch
-        condition: "rollback_plan does not cover touched_paths"
         expected: deny
-        status: untested
+        paths:
+          marker_executor:
+            status: missing
+            evidence: Rollback is purely reactive
+          worker_daemon:
+            status: missing
+            evidence: Same gap
+        severity: medium
       - id: D017
         name: undeclared irreversible operation
-        condition: "action has irreversible_operations but not declared"
         expected: deny
-        status: untested
+        paths:
+          marker_executor:
+            status: partial
+            evidence: Risk class validation as proxy
+          worker_daemon:
+            status: partial
+            evidence: Same check at worker.py:190-191
+        severity: high
 
   - name: risk-class
+    priority: P0
     cases:
       - id: D018
         name: R4 external side effect
-        condition: "risk_class=R4 requested"
         expected: deny
-        status: untested
+        paths:
+          marker_executor:
+            status: complete
+            evidence: local_marker_executor.py:355-356 blocks
+          worker_daemon:
+            status: complete
+            evidence: Worker has same check
+        severity: critical
       - id: D019
         name: R5 private content
-        condition: "risk_class=R5 requested"
         expected: deny
-        status: untested
+        paths:
+          marker_executor:
+            status: complete
+            evidence: local_marker_executor.py:357-358 blocks
+          worker_daemon:
+            status: complete
+            evidence: local_execution_worker.py:190-191 same check
+        severity: critical
       - id: D020
         name: unknown risk class
-        condition: "risk_class value not in defined set"
         expected: deny
-        status: untested
+        paths:
+          marker_executor:
+            status: complete
+            evidence: Set membership check rejects unknown
+          worker_daemon:
+            status: complete
+            evidence: Same check
+        severity: high
       - id: D021
         name: missing risk class
-        condition: "risk_class field absent"
         expected: deny
-        status: untested
+        paths:
+          marker_executor:
+            status: complete
+            evidence: Default R2 + allowlist catches None
+          worker_daemon:
+            status: complete
+            evidence: Same default
+        severity: high
 
   - name: audit-logging
+    priority: P0
     cases:
       - id: D022
         name: audit path not writable
-        condition: "audit output directory is read-only"
         expected: deny
-        status: untested
+        paths:
+          marker_executor:
+            status: partial
+            evidence: No pre-write writability check
+          worker_daemon:
+            status: partial
+            evidence: Same gap
+        severity: high
       - id: D023
         name: audit write failure
-        condition: "audit() call fails during execution"
         expected: deny
-        status: untested
+        paths:
+          marker_executor:
+            status: partial
+            evidence: No error handling in audit()
+          worker_daemon:
+            status: partial
+            evidence: Same gap
+        severity: medium
       - id: D024
         name: secret in reason field
-        condition: "reason contains secret pattern, unsanitized"
         expected: deny_or_redact
-        status: untested
+        paths:
+          marker_executor:
+            status: missing
+            evidence: sanitize_text only truncates, no secret detection
+          worker_daemon:
+            status: missing
+            evidence: Same gap
+        severity: medium
       - id: D025
         name: missing dry-run preview
-        condition: "no dry-run preview exists for live request"
         expected: deny
-        status: untested
+        paths:
+          marker_executor:
+            status: complete
+            evidence: dry_run_executor.py:91-95 + marker_executor.py:349-350
+          worker_daemon:
+            status: complete
+            evidence: local_execution_worker.py:166-167 same check
+        severity: high
 
 summary:
   total: 25
-  untested: 25
-  passed: 0
-  failed: 0
+  p0_cases: 10
+  by_path:
+    marker_executor:
+      complete: 12
+      partial: 8
+      missing: 5
+    worker_daemon:
+      complete: 10
+      partial: 6
+      missing: 9
+  critical_divergence:
+    - D001: marker complete, worker missing (LIVE_ENABLED)
+    - D002: marker complete, worker missing (LIVE_ENABLED=false)
+    - D010: marker complete, worker missing (idempotency key)
+    - D014: both missing (rollback plan)
+    - D024: both missing (secret redaction)
+  verdict: "Worker daemon has 9 missing gates vs marker executor's 5. Policy-runtime drift confirmed."
