@@ -1,0 +1,155 @@
+id: mcp-bridge-boundary-audit-002
+name: "MCP Bridge Runtime Stdio and Session Boundary Verification"
+type: audit
+status: planned
+created: 2026-05-28
+
+depends_on:
+  - mcp-bridge-boundary-audit-001
+
+target:
+  repo: Igzela/hermes-gateway-lab
+  local_path: ~/Projects/hermes-gateway-lab
+  write_scope:
+    allowed:
+      - read bridge code
+      - create experiment artifacts in token-furnace-lab
+      - run mock/fixture tests
+    forbidden:
+      - modify bridge code
+      - enable live execution
+      - expose bridge outside localhost
+      - change path secret
+
+objective:
+  primary: >
+    Verify runtime behavior of the MCP bridge stdio subprocess boundary,
+    session isolation, payload handling, and real hermes mcp serve metadata
+    leakage. Extends 001 (static + mock) with fixture-level runtime verification.
+  non_goals:
+    - do not perform live tool calls that write or mutate state
+    - do not expose bridge outside localhost
+    - do not fix bridge code in 002
+
+core_question: >
+  Can the MCP bridge's stdio boundary be bypassed at runtime through
+  subprocess lifecycle failures, session state leakage, oversized payloads,
+  or argument-based capability escalation?
+
+healthy_failure:
+  allowed: true
+  expected_if:
+    - stdio subprocess leaks hidden tool metadata
+    - subprocess crash exposes internal state
+    - session isolation fails between concurrent requests
+    - oversized payloads cause unbounded memory/error
+    - allowed tool arguments can escalate to write capability
+
+scope:
+  allowed:
+    - fixture-level runtime testing (mock hermes subprocess)
+    - subprocess spawn/timeout/crash simulation
+    - oversized payload testing
+    - concurrent request isolation testing
+  forbidden:
+    - live tool calls that write or mutate state
+    - external exposure via Cloudflare tunnel
+    - real secret usage
+    - starting real hermes mcp serve
+
+models:
+  claude-code:
+    role: "Create fixture tests, run mock subprocess verification, collect evidence"
+  gpt:
+    role: "Design runtime test matrix, review fixture results, produce synthesis"
+
+matrices:
+  required:
+    - path: knowledge/matrices/mcp-bridge-runtime-boundary-matrix.yaml
+      purpose: "Map all runtime boundary cases and their expected behavior"
+
+verdicts:
+  experiment_verdict:
+    type: COMPLETE | INCOMPLETE
+    complete_if:
+      - runtime boundary map created
+      - all 5 test groups executed
+      - evidence collected for each case
+  target_control_verdict:
+    type: PASS | PASS_WITH_NOTES | FAIL
+    pass_if:
+      - all P0 runtime cases pass
+      - no hidden tool metadata leakage at runtime
+      - subprocess lifecycle failures handled safely
+      - session isolation verified
+    pass_with_notes_if:
+      - P0 cases pass but P1 cases have warnings
+    fail_if:
+      - any P0 case fails
+      - hidden tool metadata leaks at runtime
+
+success_criteria:
+  experiment_success:
+    - runtime boundary map created with 5 test groups
+    - fixture tests created and passing
+    - evidence collected for each case
+    - synthesis produced with findings
+  target_success:
+    - no runtime metadata leakage
+    - subprocess failures bounded
+    - session isolation verified
+    - oversized payloads handled safely
+
+safety:
+  secret_policy:
+    real_secrets_allowed: false
+    redaction_required: true
+    placeholder_format:
+      - <REDACTED_SECRET>
+      - <REDACTED_PATH_SECRET>
+  live_execution:
+    allowed: false
+  destructive_operations:
+    allowed: false
+
+test_groups:
+  - id: TG01
+    name: "stdio metadata leakage"
+    priority: P0
+    description: "Verify tools/list response from mock hermes doesn't leak hidden tool metadata through bridge filtering"
+    approach: "Mock hermes subprocess returns tools with hidden metadata; verify bridge filters correctly"
+
+  - id: TG02
+    name: "stdio subprocess lifecycle"
+    priority: P0
+    description: "Verify spawn failure, timeout, crash, stderr handling"
+    approach: "Mock subprocess with various failure modes; verify bridge returns bounded errors"
+
+  - id: TG03
+    name: "session/request isolation"
+    priority: P1
+    description: "Verify concurrent requests don't share state"
+    approach: "Send concurrent requests with different tool calls; verify no cross-contamination"
+
+  - id: TG04
+    name: "oversized payload handling"
+    priority: P1
+    description: "Verify bridge handles oversized JSON-RPC payloads safely"
+    approach: "Send payloads of various sizes; verify bounded memory and error handling"
+
+  - id: TG05
+    name: "allowed tool argument safety"
+    priority: P1
+    description: "Verify channels_list / permissions_list_open arguments don't escalate capability"
+    approach: "Send crafted arguments to allowed tools; verify no write side effects"
+
+outputs:
+  run_artifacts:
+    - runs/mcp-bridge-boundary-audit-002/<timestamp>/
+  knowledge_updates:
+    - knowledge/matrices/mcp-bridge-runtime-boundary-matrix.yaml
+    - knowledge/wiki/mcp-bridge-runtime-boundary-model.md
+
+next_experiment:
+  recommended_if_pass: mcp-bridge-boundary-closeout-001
+  recommended_if_fail: mcp-bridge-boundary-fix-001
