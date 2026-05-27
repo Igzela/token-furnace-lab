@@ -1,0 +1,56 @@
+phase_id: pdf-to-algorithm-extraction-benchmark-phase-1
+run_id: 002
+type: verification
+goal: >
+  Full formula and implementation feasibility extraction for A1/A2/A3.
+  Deepen evidence from 001, assess which algorithm fragments can enter
+  the 22µF small DC-link sensorless FOC water pump technical roadmap.
+
+inputs:
+  - runs/pdf-to-algorithm-benchmark-001/20260527-213000/model_outputs/claude-code-pdf-reader.md
+  - runs/pdf-to-algorithm-benchmark-001/20260527-213000/model_outputs/gpt-algorithm-cards.md
+  - papers/arxiv-seed/A1-sensorless-foc-csi-pmsm-submersible-pump.pdf
+  - papers/arxiv-seed/A2-pmsm-smo-sensorless-vector-control.pdf
+  - papers/arxiv-seed/A3-dc-link-ripple-harmonics-feedback.pdf
+
+objectives:
+  1. Extract full equations with page numbers and figure/table references
+  2. Generate pseudocode for implementable algorithms
+  3. Assess TMS320F28035 computational feasibility
+  4. Map algorithm fragments to 22µF DC-link scenario
+  5. Identify critical gaps requiring custom derivation
+
+model_roles:
+  claude_code:
+    role: Deep formula extraction with page-level evidence
+    outputs:
+      - claude-code-formula-extraction.md
+  gpt:
+    role: Implementation feasibility and roadmap assessment
+    outputs:
+      - gpt-implementation-feasibility.md
+  codex:
+    role: Independent verification of key claims
+    outputs:
+      - codex-verification.md
+    optional: true
+
+evaluation:
+  dimensions:
+    evidence_depth:
+      weight: 30
+      description: Page numbers, figure numbers, equation numbers for every claim
+    implementability:
+      weight: 30
+      description: Pseudocode, computational analysis, MCU feasibility
+    project_mapping:
+      weight: 25
+      description: Which fragments apply to 22µF DC-link sensorless FOC pump
+    gap_identification:
+      weight: 15
+      description: What must be custom-derived vs what can be adapted
+
+verdicts:
+  PASS: Full evidence cards with page refs, pseudocode, feasibility analysis
+  PASS_WITH_NOTES: Partial evidence, some gaps in implementation details
+  FAIL: Insufficient evidence or unverifiable claims
