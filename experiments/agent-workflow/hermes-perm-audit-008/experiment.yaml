@@ -1,0 +1,38 @@
+id: hermes-perm-audit-008
+name: "Phase 1 Closeout Packaging"
+type: closeout
+created: 2026-05-27
+status: complete
+depends_on: hermes-perm-audit-007
+
+objective: |
+  Package and conclude the hermes-perm-audit 001-007 series.
+  Document final state, tag repo, record methodology outcomes.
+
+non_goals:
+  - Do not add new hardening
+  - Do not modify gate logic
+  - Do not enable live execution
+
+scope:
+  allowed:
+    - Create closeout documentation
+    - Tag and push to repo
+    - Record final metrics
+    - Document methodology outcomes
+  forbidden:
+    - New security fixes
+    - Gate logic changes
+    - Live execution
+
+success_criteria:
+  - Closeout document committed and tagged
+  - Final metrics recorded
+  - Methodology outcomes documented
+  - Phase 1 officially concluded
+
+models:
+  claude-code:
+    role: "Package closeout, commit, tag"
+  gpt:
+    role: "Confirm conclusion, recommend next steps"
