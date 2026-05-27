@@ -1,0 +1,42 @@
+id: hermes-perm-audit-001
+name: "Hermes Gateway Lab Permission Boundary Audit"
+type: agent-workflow
+created: 2026-05-27
+status: active
+
+objective: |
+  Audit hermes-gateway-lab's permission boundaries, execution entry points,
+  rollback mechanisms, and agent write-permission risks. Read-only on target repo.
+
+target:
+  repo: /home/igzela/Projects/hermes-gateway-lab
+  mode: read-only
+  branch: main
+
+models:
+  - role: gpt-architect
+    provider: openai
+    prompt: prompts/gpt-architect.md
+    rubric: rubrics/architecture-rubric.md
+  - role: claude-code-repo-reader
+    provider: anthropic
+    prompt: prompts/claude-code-repo-reader.md
+    rubric: rubrics/implementation-rubric.md
+  - role: codex-risk-reviewer
+    provider: openai
+    prompt: prompts/codex-risk-reviewer.md
+    rubric: rubrics/risk-rubric.md
+
+success_criteria:
+  - run directory complete
+  - 3 model outputs saved
+  - at least 3 accepted findings
+  - at least 1 decision record
+  - validate_run.py passes
+  - target repo unmodified
+
+prohibited:
+  - "force push main"
+  - "write to target repo"
+  - "secrets in run output"
+  - "git clean -fdx"
