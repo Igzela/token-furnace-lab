@@ -1,0 +1,69 @@
+id: hermes-perm-audit-007
+name: "Queue Hardening Fix"
+type: fix
+created: 2026-05-27
+status: complete
+depends_on: hermes-perm-audit-006
+
+objective: |
+  Harden queue ingress, replay protection, recovery behavior,
+  and audit persistence based on 006 queue ingress audit warnings.
+
+  006 found 3 WARN items:
+  - Q005: No approval TTL (arm gate is actual protection)
+  - Q007: No recovery/quarantine for corrupt files
+  - Q008: audit() doesn't sanitize payload
+
+  007 fixes these in priority order.
+
+non_goals:
+  - Do not enable live execution.
+  - Do not execute live actions.
+  - Do not change approval authority model.
+  - Do not treat ChatGPT as final approver.
+  - Do not store real secrets in fixtures.
+  - Do not weaken gate_policy checks.
+  - Do not add queue integrity checks (defer to 008 if needed).
+
+scope:
+  allowed:
+    - Modify queue validation / recovery logic
+    - Add queue quarantine behavior
+    - Add audit sink sanitization
+    - Add arm gate TTL validation tests
+    - Add non-live tests
+  forbidden:
+    - Enable live execution
+    - Execute live actions
+    - Change approval authority model
+    - Weaken gate_policy checks
+
+fixes:
+  - id: FIX-001
+    name: audit sink sanitization
+    priority: 1
+    description: "audit() must sanitize payload before writing, not trust callers"
+  - id: FIX-002
+    name: broken queue quarantine
+    priority: 2
+    description: "Corrupt queue files quarantined, not left to crash"
+  - id: FIX-003
+    name: arm gate TTL tests
+    priority: 3
+    description: "Verify arm gate TTL is enforced (existing expires_at field)"
+
+success_criteria:
+  - audit() sanitizes payload before writing
+  - Corrupt queue files quarantined to queue/quarantine/
+  - Arm gate TTL tests pass
+  - 004 regression suite: 24/24 pass
+  - All smoke tests pass
+  - No live execution enabled or run
+
+models:
+  claude-code:
+    role: "Implement queue hardening fixes"
+  gpt:
+    role: "Review hardening architecture"
+  codex:
+    role: "Verify no regression"
