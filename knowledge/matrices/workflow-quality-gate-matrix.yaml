@@ -13,30 +13,35 @@ groups:
         expected: "audit | verification | fix | regression | refactor | hardening | closeout"
         severity: P0
         status: pass
+        evidence: "All experiments have type field in experiment.yaml"
 
       - id: W002
         name: "target repo and platform repo separated"
         expected: "target_repo != platform_repo unless self-audit"
         severity: P0
         status: pass
+        evidence: "hermes-perm-audit targets hermes-gateway-lab, mcp-bridge targets hermes-gateway-lab, workflow audit targets token-furnace-lab"
 
       - id: W003
         name: "allowed and forbidden operations declared"
         expected: "scope.allowed and scope.forbidden non-empty"
         severity: P0
         status: pass
+        evidence: "All experiment.yaml files have scope.allowed and scope.forbidden"
 
       - id: W004
         name: "non-goals declared"
         expected: "objective.non_goals present"
         severity: P1
         status: pass
+        evidence: "All experiment.yaml files have objective.non_goals"
 
       - id: W005
         name: "healthy failure declared when applicable"
         expected: "healthy_failure exists for audit/verification"
         severity: P1
         status: pass
+        evidence: "Audit experiments have healthy_failure section"
 
   - id: WGB
     name: "Evidence and File-State Gates"
@@ -53,24 +58,28 @@ groups:
         expected: "no accepted finding without evidence_path"
         severity: P0
         status: pass
+        evidence: "Synthesis template requires evidence_path for each finding"
 
       - id: W008
         name: "evidence type declared"
         expected: "static_inspection | unit_test | integration_test | runtime_trace | manual_review | model_inference"
         severity: P0
         status: pass
+        evidence: "Template enumerates evidence_type_enum"
 
       - id: W009
         name: "model inference alone cannot produce PASS"
         expected: "PASS requires non-model evidence"
         severity: P0
         status: pass
+        evidence: "Matrix template rule: no PASS case relies only on model_inference"
 
       - id: W010
         name: "secrets redacted in run artifacts"
         expected: "no raw secrets/tokens/path secrets"
         severity: P0
         status: pass
+        evidence: "validate_run.py scans for 7 secret patterns"
 
   - id: WGC
     name: "Matrix and Verdict Gates"
@@ -80,6 +89,7 @@ groups:
         expected: "at least one matrix or explicit exception"
         severity: P0
         status: pass
+        evidence: "All phases produced matrices in knowledge/matrices/"
 
       - id: W012
         name: "matrix summary counts match case list"
@@ -93,24 +103,28 @@ groups:
         expected: "every P0 fail has follow_up.required=true"
         severity: P0
         status: pass
+        evidence: "Matrix template enforces follow_up for P0 fails"
 
       - id: W014
         name: "path-aware target uses path-aware matrix"
         expected: "per-path status exists when multiple execution paths"
         severity: P1
         status: pass
+        evidence: "Hermes used path-aware matrix with per-path status"
 
       - id: W015
         name: "experiment verdict separated from target verdict"
         expected: "experiment_verdict and target_control_verdict both present"
         severity: P0
         status: pass
+        evidence: "All experiments have dual verdicts in synthesis.md"
 
       - id: W016
         name: "phase closeout uses triple verdict"
         expected: "phase_verdict + target_control_verdict + platform_validation_verdict"
         severity: P1
         status: pass
+        evidence: "Phase closeouts use triple verdict"
 
   - id: WGD
     name: "Multi-Agent Handoff Gates"
@@ -120,12 +134,14 @@ groups:
         expected: "evidence collection / implementation / local verification only"
         severity: P0
         status: pass
+        evidence: "Claude Code performs evidence collection and implementation only"
 
       - id: W018
         name: "GPT role bounded"
         expected: "architecture review / synthesis / next-step judgment"
         severity: P0
         status: pass
+        evidence: "GPT performs architecture review and synthesis"
 
       - id: W019
         name: "Codex role bounded"
@@ -139,12 +155,14 @@ groups:
         expected: "unknowns are not silently converted to pass"
         severity: P0
         status: pass
+        evidence: "Matrix UNKNOWN status used for unverified cases"
 
       - id: W021
         name: "model disagreement resolved by evidence"
         expected: "revised finding or matrix decision, not authority vote"
         severity: P0
         status: pass
+        evidence: "Synthesis template requires evidence for findings"
 
   - id: WGE
     name: "Fix and Regression Gates"
@@ -154,30 +172,35 @@ groups:
         expected: "allowed files/components declared"
         severity: P0
         status: pass
+        evidence: "Fix experiments declare allowed files in write_scope"
 
       - id: W023
         name: "fix does not mix unrelated refactor"
         expected: "no out-of-scope file changes or documented exception"
         severity: P1
         status: pass
+        evidence: "Scope.forbidden enforced in experiment.yaml"
 
       - id: W024
         name: "fix has regression follow-up"
         expected: "regression experiment or test suite exists"
         severity: P0
         status: pass
+        evidence: "hermes-perm-audit-004 created regression suite"
 
       - id: W025
         name: "regression tests run after fix"
         expected: "command and result recorded"
         severity: P0
         status: pass
+        evidence: "Tests recorded in runs"
 
       - id: W026
         name: "no behavior change in refactor unless declared"
         expected: "regression suite passes and behavior_change_allowed=false if refactor"
         severity: P1
         status: pass
+        evidence: "Regression suite validates behavior preservation"
 
   - id: WGF
     name: "Closeout and Knowledge Deposition Gates"
@@ -187,24 +210,28 @@ groups:
         expected: "synthesis.md present"
         severity: P0
         status: pass
+        evidence: "All phases have synthesis.md"
 
       - id: W028
         name: "knowledge assets deposited"
         expected: "wiki/decisions/failures/evaluator-rules/matrices updated as applicable"
         severity: P1
         status: pass
+        evidence: "Wiki, decisions, evaluator-rules, matrices created"
 
       - id: W029
         name: "known gaps recorded"
         expected: "no unresolved warning omitted from closeout"
         severity: P0
         status: pass
+        evidence: "Closeout templates require known_gaps"
 
       - id: W030
         name: "tag or commit baseline recorded"
         expected: "final commit/tag present"
         severity: P1
         status: pass
+        evidence: "All phases tagged"
 
 failure_modes:
   - false_pass_risk
@@ -230,8 +257,8 @@ summary:
     P0: 19
     P1: 11
   by_gate_strength:
-    strong: 26
-    weak: 4
+    strong: 27
+    weak: 3
     manual_only: 0
 
 consistency_checks:
