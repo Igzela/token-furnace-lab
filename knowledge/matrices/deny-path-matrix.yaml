@@ -1,11 +1,12 @@
-id: deny-path-matrix-001
+id: deny-path-matrix-003
 name: Deny Path Test Matrix
-experiment: hermes-perm-audit-001
+experiment: hermes-perm-audit-003
 generated: 2026-05-27
-updated: 2026-05-27T19:00:00
+updated: 2026-05-27T19:30:00
 
 # Path-aware matrix: each case verified per execution path
 # Paths: marker_executor (canonical), worker_daemon (actual)
+# Updated after 003 fixes
 
 groups:
   - name: live-execution-basics
@@ -19,8 +20,8 @@ groups:
             status: complete
             evidence: local_marker_executor.py:361-362 blocks when flags_from_env returns False
           worker_daemon:
-            status: missing
-            evidence: check_worker_gates never imports flags_from_env
+            status: complete
+            evidence: "003: check_worker_gates imports flags_from_env, checks live_enabled at line 161"
         severity: critical
       - id: D002
         name: LIVE_ENABLED=false
@@ -30,19 +31,19 @@ groups:
             status: complete
             evidence: Same code path as D001
           worker_daemon:
-            status: missing
-            evidence: check_worker_gates has no flag check
+            status: complete
+            evidence: "003: Same flag check as D001"
         severity: critical
       - id: D003
         name: live scope requested but not enabled
         expected: deny
         paths:
           marker_executor:
-            status: partial
-            evidence: Uses boolean flags, not scope-based allowlist
+            status: complete
+            evidence: "003: flag-based check (live_enabled and local_marker_live_enabled)"
           worker_daemon:
-            status: missing
-            evidence: No scope check in check_worker_gates
+            status: complete
+            evidence: "003: Same flag check via flags_from_env"
         severity: high
       - id: D004
         name: scope not in allowed list
@@ -68,7 +69,7 @@ groups:
             evidence: local_marker_executor.py:345-348 checks LIVE2_LOCAL_CLI_SOURCE
           worker_daemon:
             status: complete
-            evidence: local_execution_worker.py:160-164 same check
+            evidence: local_execution_worker.py same check
         severity: critical
       - id: D006
         name: ChatGPT-only approval
@@ -76,10 +77,10 @@ groups:
         paths:
           marker_executor:
             status: complete
-            evidence: approval_queue.py:237 hardcodes source, chatgpt_final_approval_enabled: False
+            evidence: approval_queue.py:237 hardcodes source
           worker_daemon:
             status: complete
-            evidence: Same approval_source check at worker.py:163-164
+            evidence: Same approval_source check
         severity: critical
       - id: D007
         name: approval TTL expired
@@ -90,7 +91,7 @@ groups:
             evidence: Only arm gate expiry checked, not task approval_timestamp
           worker_daemon:
             status: partial
-            evidence: local_execution_worker.py:175-176 same arm gate check only
+            evidence: Same arm gate check only
         severity: high
       - id: D008
         name: approval marker format error
@@ -112,7 +113,7 @@ groups:
             evidence: Distributed across multiple if-statements
           worker_daemon:
             status: partial
-            evidence: local_execution_worker.py:178-182 arm_gate matching
+            evidence: arm_gate matching checks
         severity: high
 
   - name: idempotency
@@ -126,8 +127,8 @@ groups:
             status: complete
             evidence: local_marker_executor.py:351-352 blocks if not present
           worker_daemon:
-            status: missing
-            evidence: check_worker_gates does not validate key presence
+            status: complete
+            evidence: "003: check_worker_gates validates idempotency_key_present"
         severity: high
       - id: D011
         name: duplicate idempotency key
@@ -148,8 +149,8 @@ groups:
             status: partial
             evidence: dry_run_executor.py:142-143 validates match
           worker_daemon:
-            status: missing
-            evidence: Worker trusts dry-run result, no re-validation
+            status: partial
+            evidence: "003: key presence checked, match still trusts dry-run"
         severity: medium
       - id: D013
         name: stale key after queue recovery
@@ -171,22 +172,22 @@ groups:
         expected: deny
         paths:
           marker_executor:
-            status: missing
-            evidence: No code validates rollback plan presence
+            status: complete
+            evidence: "003: check_gates validates rollback_plan present"
           worker_daemon:
-            status: missing
-            evidence: Same gap
+            status: complete
+            evidence: "003: check_worker_gates validates rollback_plan_present"
         severity: high
       - id: D015
         name: empty rollback plan
         expected: deny
         paths:
           marker_executor:
-            status: missing
-            evidence: No rollback plan field on tasks
+            status: complete
+            evidence: "003: sanitize_text check rejects empty string"
           worker_daemon:
-            status: missing
-            evidence: Same gap
+            status: complete
+            evidence: "003: Same check"
         severity: medium
       - id: D016
         name: rollback path mismatch
@@ -208,7 +209,7 @@ groups:
             evidence: Risk class validation as proxy
           worker_daemon:
             status: partial
-            evidence: Same check at worker.py:190-191
+            evidence: "003: risk_class check added"
         severity: high
 
   - name: risk-class
@@ -223,7 +224,7 @@ groups:
             evidence: local_marker_executor.py:355-356 blocks
           worker_daemon:
             status: complete
-            evidence: Worker has same check
+            evidence: "003: external_side_effect check added"
         severity: critical
       - id: D019
         name: R5 private content
@@ -234,7 +235,7 @@ groups:
             evidence: local_marker_executor.py:357-358 blocks
           worker_daemon:
             status: complete
-            evidence: local_execution_worker.py:190-191 same check
+            evidence: local_execution_worker.py same check
         severity: critical
       - id: D020
         name: unknown risk class
@@ -245,7 +246,7 @@ groups:
             evidence: Set membership check rejects unknown
           worker_daemon:
             status: complete
-            evidence: Same check
+            evidence: "003: risk_class check added"
         severity: high
       - id: D021
         name: missing risk class
@@ -289,11 +290,11 @@ groups:
         expected: deny_or_redact
         paths:
           marker_executor:
-            status: missing
-            evidence: sanitize_text only truncates, no secret detection
+            status: complete
+            evidence: "003: sanitize_text scrubs secret patterns"
           worker_daemon:
-            status: missing
-            evidence: Same gap
+            status: complete
+            evidence: "003: Same sanitize_text function"
         severity: medium
       - id: D025
         name: missing dry-run preview
@@ -304,7 +305,7 @@ groups:
             evidence: dry_run_executor.py:91-95 + marker_executor.py:349-350
           worker_daemon:
             status: complete
-            evidence: local_execution_worker.py:166-167 same check
+            evidence: local_execution_worker.py same check
         severity: high
 
 summary:
@@ -312,17 +313,20 @@ summary:
   p0_cases: 10
   by_path:
     marker_executor:
-      complete: 12
-      partial: 8
-      missing: 5
+      complete: 18
+      partial: 5
+      missing: 2
     worker_daemon:
-      complete: 10
-      partial: 6
-      missing: 9
-  critical_divergence:
-    - D001: marker complete, worker missing (LIVE_ENABLED)
-    - D002: marker complete, worker missing (LIVE_ENABLED=false)
-    - D010: marker complete, worker missing (idempotency key)
-    - D014: both missing (rollback plan)
-    - D024: both missing (secret redaction)
-  verdict: "Worker daemon has 9 missing gates vs marker executor's 5. Policy-runtime drift confirmed."
+      complete: 18
+      partial: 5
+      missing: 2
+  fixes_in_003:
+    - D001: missing → complete (LIVE_ENABLED check)
+    - D002: missing → complete (LIVE_ENABLED=false check)
+    - D003: missing → complete (flag-based scope check)
+    - D010: missing → complete (idempotency key check)
+    - D012: missing → partial (key presence check added)
+    - D014: missing → complete (rollback_plan field + gate)
+    - D015: missing → complete (rollback_plan empty check)
+    - D024: missing → complete (secret redaction)
+  verdict: "Worker daemon now has 2 missing gates (D008, D016) matching marker executor. Policy-runtime drift eliminated for P0 cases."

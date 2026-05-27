@@ -1,0 +1,14 @@
+id: hermes-perm-audit-003
+experiment: hermes-perm-audit-003
+created: 2026-05-27T19:17:41
+operator: igzela
+target: /home/igzela/Projects/hermes-gateway-lab
+branch: exp/hermes-perm-audit-003
+status: in-progress
+models:
+  claude-code:
+    role: Implement gate conformance fix
+  gpt:
+    role: Review fix architecture
+  codex:
+    role: Verify no regression

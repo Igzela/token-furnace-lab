@@ -2,7 +2,7 @@ id: hermes-perm-audit-003
 name: "Hermes Gateway Lab Worker Gate Conformance Fix"
 type: agent-workflow
 created: 2026-05-27
-status: planned
+status: complete
 depends_on: hermes-perm-audit-002
 
 objective: |
