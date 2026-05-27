@@ -101,8 +101,9 @@ Technical roadmap for 22µF DC-link + sensorless FOC + water pump + TMS320F28035
 | derivation-002 | energy balance | COMPLETE | 85/100 | Torque ripple binding, 300W needs APD, GPT final: rated-torque distinction |
 | derivation-003 | FOC voltage envelope | COMPLETE | 82/100 | ψ_f≤0.103, 300W needs ≥6632rpm, high-line 240W limit |
 | derivation-004 | APD sizing | COMPLETE | 78/100 | 16µF/500V H-bridge, 90% decoupling enables 300W |
+| derivation-005 | joint simulation | PENDING | - | Next: FOC+APD+22µF dynamic model |
 | phase-a-001 | FOC design | COMPLETE | - | F28035 budget OK, modules defined |
-| phase-a-002 | FOC impl | PENDING | - | Next: implement on simulator |
+| phase-a-002 | FOC interface | PENDING | - | Parallel: interface design only, no implementation |
 | phase-a-003 | FOC hw test | PENDING | - | Next: validate on 1360µF hardware |
 
 ## References
