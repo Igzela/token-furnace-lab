@@ -1,0 +1,73 @@
+phase_id: small-dc-link-foc-phase-a
+run_id: 001
+type: design
+goal: >
+  Define Core FOC baseline requirements, interfaces, and module structure
+  for TMS320F28035 sensorless PMSM FOC. Design phase only — no code.
+  Explicitly independent of 22µF DC-link strategy.
+
+inputs:
+  platform: TMS320F28035 (60MHz, fixed-point, 64KB Flash, 12KB RAM)
+  motor: PMSM surface-mount water pump
+  control: Sensorless FOC (SMO-based)
+  papers:
+    A2: arXiv 2305.04046 (SMO observer, speed/current PI)
+    A1: arXiv 2503.22855 (I-f startup, smooth transition)
+  baseline: 1360µF DC-link, stable supply
+
+objectives:
+  1. Define dq current loop architecture and parameters
+  2. Define Clarke/Park transform implementation
+  3. Define SVPWM with real-time Vdc feedforward
+  4. Define current limiting strategy
+  5. Define SMO/PLL observer for mid-high speed
+  6. Create TMS320F28035 fixed-point feasibility checklist
+  7. Define foc_constraints YAML interface for derivation-002
+
+deliverables:
+  - FOC module architecture diagram
+  - Parameter list (PI gains, observer gains, timing)
+  - Fixed-point feasibility checklist
+  - foc_constraints YAML interface
+  - Acceptance criteria for Phase A validation
+
+explicitly_excluded:
+  - Active Power Decoupling (APD)
+  - Pavg_ref power limiting strategy
+  - Large-ripple closed-loop control
+  - 22µF final stability claims
+
+acceptance_criteria:
+  - FOC runs stably on stable DC supply or 1360µF baseline
+  - All modules fit within F28035 fixed-point budget
+  - Interface YAML compatible with derivation-002
+
+model_roles:
+  claude_code:
+    role: Architecture design and feasibility analysis
+    outputs:
+      - claude-code-design.md
+  gpt:
+    role: Independent review and parameter verification
+    outputs:
+      - gpt-review.md
+
+evaluation:
+  dimensions:
+    architectural_soundness:
+      weight: 30
+      description: Module structure is clean and implementable
+    parameter_correctness:
+      weight: 30
+      description: PI gains, observer gains are physically reasonable
+    platform_feasibility:
+      weight: 25
+      description: Everything fits F28035 fixed-point budget
+    interface_completeness:
+      weight: 15
+      description: YAML interface covers all needed constraints
+
+verdicts:
+  PASS: Complete design with verified parameters and interface
+  PASS_WITH_NOTES: Partial design, some parameters need tuning
+  FAIL: Architecture infeasible or parameters physically wrong

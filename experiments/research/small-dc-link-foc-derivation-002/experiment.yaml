@@ -1,0 +1,63 @@
+phase_id: small-dc-link-foc-derivation-phase-2
+run_id: 002
+type: derivation
+goal: >
+  Derive 22µF DC-Link energy balance envelope under single-phase input.
+  Energy-based approach (not small-ripple approximation) to determine
+  feasible power/speed operating region.
+
+inputs:
+  target_dc_link_capacitance: 22µF
+  Vdc_nom: 300V
+  input_topology: single-phase (worst case)
+  grid_frequency: 50Hz
+  motor_type: PMSM water pump
+  baseline_observed: 1360µF at 4000rpm, 300Vdc
+  derivation_001_result: single-phase infeasible as stable bus, three-phase marginal
+
+objectives:
+  1. Single-phase input power model (Pin(t) = Pavg·[1-cos(2ωt)])
+  2. DC-link capacitor energy equation (E = ½CV²)
+  3. Vdc(t) or Vdc_min envelope over 100Hz cycle
+  4. Pout_avg_ref(ω) upper limit given Cdc=22µF
+  5. 100Hz power pulsation absorption demand quantification
+  6. Three-branch analysis: capacitor vs mechanical inertia vs APD
+  7. Safe operating envelope (speed, power, Vdc limits)
+
+deliverables:
+  - Energy balance derivation (energy-based, not small-ripple)
+  - Vdc_min envelope formula
+  - Maximum Pout_avg vs speed curve
+  - Three-branch absorption comparison
+  - Safe operating envelope definition
+  - dc_link_constraints YAML interface
+
+model_roles:
+  claude_code:
+    role: Energy-based mathematical derivation
+    outputs:
+      - claude-code-derivation.md
+  gpt:
+    role: Independent verification and engineering judgment
+    outputs:
+      - gpt-verification.md
+
+evaluation:
+  dimensions:
+    mathematical_correctness:
+      weight: 35
+      description: Energy equations dimensionally consistent, valid for large ripple
+    engineering_practicality:
+      weight: 30
+      description: Results actionable for hardware/control design
+    completeness:
+      weight: 20
+      description: All 7 objectives addressed
+    evidence_quality:
+      weight: 15
+      description: Assumptions stated, derivations traceable
+
+verdicts:
+  PASS: Complete energy envelope with verified equations and interface YAML
+  PASS_WITH_NOTES: Partial derivation, some branches unquantified
+  FAIL: Equations inconsistent or results physically impossible
