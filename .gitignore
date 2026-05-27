@@ -1,9 +1,11 @@
-# Runs contain potentially large output files
-runs/
-
 # Temporary files
 *.tmp
 *.log
+
+# Large binary outputs in runs
+runs/**/*.bin
+runs/**/*.dat
+runs/**/*.json
 
 # API keys and secrets
 .env
