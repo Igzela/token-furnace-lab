@@ -1,0 +1,97 @@
+phase_id: pdf-to-algorithm-extraction-benchmark-phase-1
+target_domain: motor-control / electrolytic-capacitorless drive / FOC
+platform_repo: token-furnace-lab
+source_corpus: local Chinese technical PDFs
+phase_type: benchmark
+
+core_question: >
+  Token Furnace Lab 能否从专业 PDF 论文中稳定提取可验证、可比较、可实现的算法信息，
+  并区分公式、控制逻辑、实验条件、适用边界和工程风险？
+
+paper_selection:
+  max_papers: 3
+  categories:
+    P1:
+      name: 主算法论文
+      requirements:
+        - 控制策略
+        - 公式推导
+        - 系统框图
+        - 实验结果
+    P2:
+      name: 工程实现论文
+      requirements:
+        - 硬件参数
+        - 控制器实现
+        - 实验平台描述
+    P3:
+      name: 对照论文
+      requirements:
+        - 相近方案但不同方法
+        - 可用于比较算法边界
+
+extraction_targets:
+  - Pavg_ref 功率参考计算方式
+  - DC-Link 电压纹波进入控制的方式
+  - 小电容下转矩/转速脉动抑制方法
+  - 输入功率和输出功率平衡策略
+  - 传感器需求（电压/电流/速度）
+  - 无感 FOC 适用性
+  - TMS320F28035 算力适配性
+  - 22µF DC-Link 可行性
+
+evaluation:
+  dimensions:
+    accuracy:
+      weight: 30
+      description: 公式、变量、实验条件是否提取正确，不允许推断写成论文事实
+    completeness:
+      weight: 20
+      description: 是否覆盖问题、算法、公式、实验、适用边界
+    implementability:
+      weight: 25
+      description: 是否能转成伪代码、控制流程或工程路线
+    evidence_quality:
+      weight: 15
+      description: 每个关键结论是否有页码、图号、公式号或表格来源
+    project_relevance:
+      weight: 10
+      description: 是否能服务 22µF DC-Link + 无感 FOC + 水泵场景
+
+  verdicts:
+    PASS: 可提取可实现算法流程，并有页码/公式/图表证据
+    PASS_WITH_NOTES: 算法方向有用，但缺参数、公式不完整、实验条件不足
+    FAIL: 只是摘要无法转成算法；或缺证据；或大量幻觉
+
+model_roles:
+  claude-code:
+    role: PDF reader and inventory generator
+    outputs:
+      - claude-code-pdf-reader.md
+  gpt:
+    role: Algorithm card extractor
+    outputs:
+      - gpt-algorithm-cards.md
+  codex:
+    role: Implementation feasibility reviewer
+    outputs:
+      - codex-implementation-review.md
+    optional: true
+
+expected_outputs:
+  experiment_definition:
+    - experiment.yaml
+    - task.md
+    - prompts/claude-code-pdf-inventory.md
+    - prompts/gpt-algorithm-extractor.md
+    - prompts/codex-implementation-reviewer.md
+    - rubrics/algorithm-extraction-rubric.md
+  run_artifacts:
+    - inputs/pdf-inventory.md
+    - inputs/selected-papers.md
+    - model_outputs/claude-code-pdf-reader.md
+    - model_outputs/gpt-algorithm-cards.md
+    - model_outputs/codex-implementation-review.md
+    - synthesis/algorithm-comparison.md
+    - synthesis/extraction-quality-report.md
+    - synthesis/project-relevance-ranking.md
