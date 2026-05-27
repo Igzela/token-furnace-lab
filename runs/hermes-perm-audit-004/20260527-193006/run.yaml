@@ -1,0 +1,44 @@
+id: hermes-perm-audit-004
+experiment_id: hermes-perm-audit-004
+created: 2026-05-27T19:30:06
+completed: 2026-05-27T20:15:00
+operator: claude-code
+target: /home/igzela/Projects/hermes-gateway-lab
+
+status: COMPLETE
+
+verdicts:
+  experiment_verdict: COMPLETE
+  target_control_verdict: PASS
+  reason: |
+    All 24 regression tests pass. Gate conformance regression suite
+    validates 7 P0 deny cases on both paths, dual-path equivalence,
+    worker no-execute after deny, and secret redaction persistence.
+
+deliverables:
+  - scripts/gate_conformance_regression.py (24 tests, 4 layers)
+  - model-outputs/claude-code-regression-implementer.md
+  - model-outputs/gpt-test-architect.md
+  - model-outputs/codex-coverage-verifier.md
+  - synthesis/comparison.md
+  - synthesis/decision-record.md
+  - synthesis/cost_estimate.md
+
+test_results:
+  total: 24
+  passed: 24
+  failed: 0
+  verdict: PASS
+  layers:
+    - name: basic_deny_assertions
+      tests: 14
+      passed: 14
+    - name: dual_path_conformance
+      tests: 3
+      passed: 3
+    - name: worker_no_execute
+      tests: 3
+      passed: 3
+    - name: redaction_persistence
+      tests: 4
+      passed: 4

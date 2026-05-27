@@ -1,0 +1,55 @@
+id: hermes-perm-audit-004
+name: "Worker Gate Conformance Regression Suite"
+type: regression
+created: 2026-05-27
+status: complete
+depends_on: hermes-perm-audit-003
+
+objective: |
+  Turn the 003 gate conformance fix into an executable regression suite.
+  Ensure marker_executor and worker_daemon remain behaviorally equivalent
+  for all P0 deny cases.
+
+non_goals:
+  - Do not refactor gate architecture.
+  - Do not extract gate_policy yet.
+  - Do not enable live execution.
+  - Do not modify approval flow.
+
+scope:
+  allowed:
+    - Write executable conformance test script
+    - Write dual-path comparison tests
+    - Write redaction persistence tests
+    - Write worker no-execute-after-deny tests
+  forbidden:
+    - Do not modify gate logic
+    - Do not enable live execution
+    - Do not refactor shared policy
+
+models:
+  claude-code:
+    role: "Implement regression test suite"
+  gpt:
+    role: "Review test architecture"
+  codex:
+    role: "Verify test coverage"
+
+test_layers:
+  - name: basic_deny_assertions
+    description: "Each P0 deny case must deny on both paths"
+    cases: [D001, D002, D003, D010, D012, D014, D018, D019]
+  - name: dual_path_conformance
+    description: "Same fixture fed to both paths produces same decision"
+    assertion: "marker_result == worker_result"
+  - name: worker_no_execute
+    description: "Deny must prevent execution (no output file, no side effect)"
+  - name: redaction_persistence
+    description: "Secrets in reason field must be redacted in audit log"
+
+success_criteria:
+  - All P0 deny cases deny on both paths
+  - Dual-path conformance: 0 divergent
+  - Worker no-execute: verified for all deny cases
+  - Redaction: secrets not in audit log
+  - No live execution enabled or run

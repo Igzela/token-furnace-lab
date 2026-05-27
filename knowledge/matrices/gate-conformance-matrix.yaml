@@ -1,8 +1,8 @@
 id: hermes-gate-conformance-matrix
 name: Gate Conformance Matrix
-experiment: hermes-perm-audit-003
+experiment: hermes-perm-audit-004
 generated: 2026-05-27
-updated: 2026-05-27T19:30:00
+updated: 2026-05-27T20:15:00
 
 # Tests whether worker_daemon path conforms to marker_executor canonical path
 # Updated after 003 fixes
@@ -69,6 +69,21 @@ conformance_cases:
       - worker_run_once catches WorkerError and returns success=False
       - All canonical gates now checked before arm gate validation
     severity: critical
+
+  - id: C006
+    name: regression suite validates all P0 deny cases
+    expected: true
+    actual: true
+    status: pass
+    evidence:
+      - gate_conformance_regression.py: 24 tests, 4 layers
+      - Layer 1: 7 P0 deny cases on both paths (14 tests)
+      - Layer 2: Dual-path conformance (3 tests)
+      - Layer 3: Worker no-execute after deny (3 tests)
+      - Layer 4: Redaction persistence (4 tests)
+      - All 24 tests pass, 0 failures
+    severity: critical
+    experiment: hermes-perm-audit-004
 
 per_case_conformance:
   D001:
@@ -185,8 +200,8 @@ per_case_conformance:
 
 summary:
   conformance_cases:
-    total: 5
-    pass: 4
+    total: 6
+    pass: 5
     fail: 0
     partial: 1
     untested: 0
@@ -194,6 +209,12 @@ summary:
     total: 25
     conformant: 25
     divergent: 0
+  regression_suite:
+    total_tests: 24
+    passed: 24
+    failed: 0
+    verdict: PASS
+    script: scripts/gate_conformance_regression.py
   fixes_applied:
     - "D001/D002: LIVE_ENABLED check added to worker"
     - "D003: flag-based scope check added"
@@ -201,4 +222,4 @@ summary:
     - "D012: idempotency key presence check added (match still partial)"
     - "D014/D015: rollback_plan field and gate check added"
     - "D024: secret redaction in sanitize_text"
-  verdict: "0/25 cases diverge. Worker daemon now enforces all canonical gate checks. C001 partial (independent function), C002-C005 pass."
+  verdict: "0/25 cases diverge. Regression suite: 24/24 pass. C001 partial (independent function), C002-C006 pass."

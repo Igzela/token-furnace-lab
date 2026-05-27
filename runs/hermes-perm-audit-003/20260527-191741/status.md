@@ -8,7 +8,7 @@ Target: /home/igzela/Projects/hermes-gateway-lab
 
 ### Verdicts
 - experiment_verdict: COMPLETE
-- target_control_verdict: PASS
+- target_control_verdict: PASS_WITH_NOTES
 - reason: All 4 fixes implemented, C001-C005 pass (C001 partial), 0/25 divergent cases, no regressions
 
 ### Checklist
