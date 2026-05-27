@@ -2,7 +2,32 @@
 
 ## 项目概述
 
-这是一个 AI agent 实验平台，故意制造高 token 消耗但必须产出可检查资产。
+这是一个 AI agent 实验平台，故意制造高 token 消耗但必须产出可检查资产。核心问题：大量 token 在什么条件下会变成真实生产力，而不是噪声？
+
+## 当前阶段
+
+Active Research — 个人研究项目，迭代中，无外部用户。
+
+## 非目标（Out of Scope）
+
+- 不是生产部署的 AI agent — 这是实验室/研究项目
+- 不自动生成用户文档或 README
+- 不引入 CI/CD 或自动发布流程
+- 不做线上用户服务
+- 不引入重型框架或不必要依赖
+
+## 技术栈
+
+- **语言**: Python 3.10+, Bash 脚本
+- **依赖**: 极简主义，仅 PyYAML（不引入重型框架）
+- **AI 模型**: Claude (via claude code), GPT (via API), 其他 LLM
+- **工具**: 自写脚本，不使用 CI/CD 平台
+
+## 外部依赖
+
+- Claude Code CLI（主要 agent 执行环境）
+- OpenAI API（用于 GPT 交叉验证）
+- Obsidian（知识沉淀的阅读端，不通过代码集成）
 
 ## 核心规则
 
@@ -39,6 +64,53 @@
 - code-reviewer: 代码审查
 - Explore: 快速代码探索
 - Plan: 实现方案设计
+
+## 当前活跃实验
+
+- `hermes-perm-audit-001~008` — 权限审计系列（Phase 1 完成）
+- `small-dc-link-foc-derivation` — 小直流链路 FOC 推导
+  - derivation-001: ripple model (90/100 PASS)
+  - derivation-002: energy balance (85/100 PASS_WITH_NOTES)
+  - derivation-003: FOC voltage envelope (82/100 PASS_WITH_NOTES)
+  - derivation-004: APD sizing (78/100 PASS_WITH_TWO_CORRECTIONS)
+  - derivation-005: joint simulation (72/100 NEEDS_REVIEW — APD clamping asymmetry limits 300W; 100W achievable)
+  - phase-a-001: FOC baseline design (COMPLETE)
+  - 详细进度见 `knowledge/wiki/small-dc-link-foc-technical-route.md`
+- `mcp-bridge-boundary-audit` — MCP 桥接边界审计
+
+### Key Decisions (FOC derivation series)
+
+- **Solution fork**: Path A — keep 22µF DC-link + add APD (Active Power Decoupling)
+- **APD**: 16µF/500V H-bridge, 90% decoupling → 300W achievable at 3000-4000rpm → **REVISED** (derivation-005): APD clamping asymmetry limits 300W; 100W achievable
+- **Motor parameter**: ψ_f ≤ 0.103 for 300V/4000rpm (revised from 0.15 to 0.08)
+- **GPT communication**: via Chrome DevTools MCP (`fill` + `press_key Enter`, not `type_text`)
+- **GPT role**: Cross-verification of derivations; GPT caught 3 critical formula/numerical errors + identified APD model bugs
+- **Model corrections** (derivation-005): electrical power (3-phase), quadratic Iq solution, APD energy center init
+
+## 决策与知识库
+
+- 架构决策: `knowledge/decisions/`
+- 失败分析: `knowledge/failures/`
+- 可复用 Prompt: `knowledge/reusable-prompts/`
+- 评估规则: `knowledge/evaluator-rules/`
+- Wiki 笔记: `knowledge/wiki/`
+
+## 脚本验证
+
+- 修改 `scripts/` 后，用 `python scripts/validate_run.py runs/<latest>` 验证
+- 新建 run 后，必须运行 `scripts/validate_run.py` 确保结构合规
+
+## Commit 规范
+
+- 英文，祈使句，首字母大写
+- 格式: `<Verb> <what> [optional context]`
+- 示例: `Add GPT final verification for derivation-002`
+
+## 运行环境
+
+- 本地运行，无服务器、无部署
+- 所有产物存储在 `runs/` 和 `knowledge/`
+- 不涉及外部服务的生产环境
 
 ## 路径作用域
 

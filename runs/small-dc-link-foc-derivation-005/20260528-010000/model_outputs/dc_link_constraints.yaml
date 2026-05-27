@@ -1,0 +1,23 @@
+# derivation-005: DC-Link Constraints (Joint Simulation)
+
+constraints:
+  vdc_ripple:
+    max_pp_pct: 10.0
+    warning_pp_pct: 15.0
+  torque_ripple:
+    max_pct_rated: 30.0
+  vdc_rating:
+    max: 400.0
+    min: 200.0
+  vapd_rating:
+    max: 450.0
+    min: 200.0
+
+operating_points:
+  best_100W:
+    Vnom: 354
+    Capd: 22uF
+    D_apd: 95%
+    speed_rpm: 3000
+    vdc_ripple: 0.6%pp
+    torque_ripple: 2.2%
