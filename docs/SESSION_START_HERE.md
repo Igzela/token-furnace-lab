@@ -11,8 +11,9 @@ Token Furnace Lab is a local AI-agent experiment lab. It deliberately spends man
 - Maturity: `L3-VALIDATED`
 - Completed platform phases: Hermes permission audit, MCP bridge boundary audit, workflow quality-gate audit, PDF-to-algorithm benchmark
 - Active research thread: small DC-link PMSM FOC / APD / 22uF DC-link derivation
-- Active branch: `exp/hermes-perm-audit-001`
-- Default cloud `main` must not be treated as authoritative unless it contains the same handoff docs and active research history.
+- Canonical cloud handoff branch: `main`
+- Research branch retained: `exp/hermes-perm-audit-001`
+- `main` and `exp/hermes-perm-audit-001` should both contain this handoff state after push.
 
 ## Latest Active Run
 

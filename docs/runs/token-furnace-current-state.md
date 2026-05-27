@@ -73,7 +73,8 @@ python3 scripts/validate_synthesis_evidence.py runs/<experiment>/<timestamp>/
 
 ## Current Active Research Handoff
 
-- Active branch: `exp/hermes-perm-audit-001`
+- Canonical cloud handoff branch: `main`
+- Research branch retained: `exp/hermes-perm-audit-001`
 - Active thread: `small-dc-link-foc-derivation`
 - Latest run: `runs/small-dc-link-foc-derivation-005/20260528-010000`
 - Latest run status: `NEEDS_FINAL_VERIFICATION`
