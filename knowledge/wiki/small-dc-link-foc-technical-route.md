@@ -83,11 +83,11 @@ Technical roadmap for 22µF DC-link + sensorless FOC + water pump + TMS320F28035
 ## Critical Gaps
 
 1. ~~**Pavg_ref**: Power reference calculation method not in any paper~~ → **RESOLVED** (derivation-001): P_avg_ref = P₀ + k·ω³
-2. ~~**22µF ripple model**: Papers assume large capacitance~~ → **RESOLVED** (derivation-001+002): energy-based model shows 22µF feasible at 300W with 42% Vdc swing
-3. ~~**Torque ripple coupling~~ → **RESOLVED** (derivation-002): mechanical inertia absorbs 100Hz pulsation, speed ripple 0.48% at 3000rpm
+2. ~~**22µF ripple model**: Papers assume large capacitance~~ → **RESOLVED** (derivation-001+002): energy-based model shows 22µF feasible at 300W with 50%pp Vdc swing, but torque ripple limits to ~170W
+3. ~~**Torque ripple coupling~~ → **PARTIALLY RESOLVED** (derivation-002): speed ripple <0.5% OK, but torque ripple = 100% at full power (binding constraint)
 4. ~~**Sensorless FOC under large ripple**: Robustness assessment needed~~ → **RESOLVED** (derivation-001): <10%pp conservative, 10-20%pp attemptable with Vdc feedforward
 5. **Input topology**: Single-phase or three-phase? — must be confirmed before proceeding
-6. ~~**APD energy buffer sizing**~~ → **RESOLVED** (derivation-002): mechanical inertia is the primary absorption path, APD not required if J is sufficient
+6. **APD energy buffer sizing**: ~~APD not required if J is sufficient~~ → **REVISED** (derivation-002): APD required for 300W, mechanical inertia alone insufficient due to torque ripple
 7. **FOC baseline validation**: Phase A design complete, needs implementation and hardware test
 
 ## Experiment Progress
@@ -95,8 +95,8 @@ Technical roadmap for 22µF DC-link + sensorless FOC + water pump + TMS320F28035
 | ID | Type | Status | Score | Key Finding |
 |----|------|--------|-------|-------------|
 | derivation-001 | ripple model | COMPLETE | 90/100 | Single-phase infeasible as stable bus |
-| derivation-002 | energy balance | IN PROGRESS | - | 22µF feasible with 42% Vdc swing + inertia |
-| phase-a-001 | FOC design | IN PROGRESS | - | F28035 budget OK, modules defined |
+| derivation-002 | energy balance | COMPLETE | 85/100 | Torque ripple binding, 300W needs APD |
+| phase-a-001 | FOC design | COMPLETE | - | F28035 budget OK, modules defined |
 | phase-a-002 | FOC impl | PENDING | - | Next: implement on simulator |
 | phase-a-003 | FOC hw test | PENDING | - | Next: validate on 1360µF hardware |
 
@@ -106,5 +106,5 @@ Technical roadmap for 22µF DC-link + sensorless FOC + water pump + TMS320F28035
 - A2: arXiv 2305.04046
 - A3: arXiv 1901.10020
 - E1: derivation-001 — Pavg_ref + ripple model (score 90/100, PASS)
-- E2: derivation-002 — Energy balance envelope (IN PROGRESS)
-- E3: phase-a-001 — FOC baseline design (IN PROGRESS)
+- E2: derivation-002 — Energy balance envelope (score 85/100, PASS_WITH_NOTES)
+- E3: phase-a-001 — FOC baseline design (COMPLETE)
