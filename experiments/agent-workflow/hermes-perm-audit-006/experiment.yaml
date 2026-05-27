@@ -1,0 +1,104 @@
+id: hermes-perm-audit-006
+name: "Queue Ingress / Bypass Entry Audit"
+type: audit
+created: 2026-05-27
+status: complete
+depends_on: hermes-perm-audit-005
+
+objective: |
+  Audit queue ingress paths and bypass entry risks.
+  Answer: can any request bypass marker_executor / gate_policy
+  and reach worker_daemon execution directly?
+
+  005 solved "two paths share core gate policy".
+  006 checks for "third entry" paths: manual queue writes,
+  recovery replays, stale artifacts, file mutations.
+
+non_goals:
+  - Do not enable live execution.
+  - Do not execute live actions.
+  - Do not modify approval flow.
+  - Do not add new auto-execution entry points.
+  - Do not use real secrets in tests.
+  - Do not fix queue logic (defer to 007 if needed).
+
+scope:
+  allowed:
+    - Read queue producer / consumer / recovery code
+    - Draw queue lifecycle map
+    - Write read-only verification scripts
+    - Write non-live bypass tests
+    - Construct local fixture queue items
+    - Check worker re-gates before execution
+    - Check recovery quarantine behavior
+  forbidden:
+    - Enable live execution
+    - Execute live actions
+    - Modify approval flow
+    - Add new auto-execution entry
+    - Use real secrets
+    - Fix queue logic directly
+
+questions:
+  - id: Q001
+    name: queue item writer inventory
+    question: "Who can create queue items?"
+    expected: all writers identified
+  - id: Q002
+    name: worker final gate before execution
+    question: "Does worker always call gate_policy before side effect?"
+    expected: yes
+  - id: Q003
+    name: manual queue injection
+    question: "Can a hand-crafted queue item trigger worker execution?"
+    expected: denied
+  - id: Q004
+    name: post-approval queue mutation
+    question: "Can a queue item be modified after approval/dry-run?"
+    expected: denied
+  - id: Q005
+    name: stale approval replay
+    question: "Can a stale approval trigger execution?"
+    expected: denied
+  - id: Q006
+    name: stale idempotency replay
+    question: "Can a stale idempotency key trigger execution?"
+    expected: denied_or_noop
+  - id: Q007
+    name: broken queue recovery
+    question: "Are broken queue files quarantined?"
+    expected: quarantined, not executable
+  - id: Q008
+    name: recovery artifact secret redaction
+    question: "Do recovery/audit artifacts redact secrets?"
+    expected: redacted before persistence
+
+success_criteria:
+  experiment:
+    - All queue writers identified
+    - Worker consume path documented
+    - At least Q001-Q005 have evidence
+    - No live execution enabled or run
+    - All bypass attempts denied or recorded as FAIL
+    - No real secrets in artifacts
+  target_control:
+    - Worker calls gate_policy before every execution
+    - Manual injection of invalid queue item denied
+    - Post-approval queue mutation denied
+    - Stale approval / stale idempotency cannot trigger execution
+    - Recovery files default to quarantine
+    - Recovery/audit artifacts don't leak secret fields
+
+deliverables:
+  - knowledge/matrices/queue-ingress-matrix.yaml
+  - knowledge/matrices/queue-bypass-risk-matrix.yaml
+  - scripts/queue_ingress_audit.py (verification script)
+  - Model outputs and synthesis
+
+models:
+  claude-code:
+    role: "Audit queue ingress paths"
+  gpt:
+    role: "Review bypass risk matrix"
+  codex:
+    role: "Verify no live execution"

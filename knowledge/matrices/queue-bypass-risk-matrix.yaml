@@ -1,0 +1,59 @@
+id: queue-bypass-risk-matrix
+name: Queue Bypass Risk Matrix
+experiment: hermes-perm-audit-006
+generated: 2026-05-27
+
+# Risk = likelihood x impact of bypassing gate_policy
+
+risks:
+  - id: RISK-001
+    name: file-level queue tampering
+    description: "Attacker modifies queue.json directly to inject crafted task"
+    likelihood: low
+    impact: high
+    mitigation: "No integrity check. Atomic writes prevent partial corruption but not intentional tampering."
+    residual: "Medium — requires filesystem access"
+    recommendation: "Add HMAC signature on queue items (defer to 007)"
+
+  - id: RISK-002
+    name: stale approval replay
+    description: "Approved task remains valid indefinitely"
+    likelihood: low
+    impact: medium
+    mitigation: "Arm gate consumption prevents direct replay. Terminal state transitions blocked."
+    residual: "Low — arm gate is the actual protection"
+    recommendation: "Add approval TTL (defer to 007)"
+
+  - id: RISK-003
+    name: corrupt queue file
+    description: "Disk error or crash corrupts queue.json"
+    likelihood: low
+    impact: high
+    mitigation: "Atomic writes (tmp.replace). No recovery mechanism."
+    residual: "Medium — queue operations fail until manual fix"
+    recommendation: "Add backup/quarantine on corrupt detection (defer to 007)"
+
+  - id: RISK-004
+    name: audit log secret leakage
+    description: "Unsanitized payload written to audit log"
+    likelihood: low
+    impact: medium
+    mitigation: "Most callers sanitize. sanitize_text covers 6 secret patterns."
+    residual: "Low — edge cases with disk-loaded values"
+    recommendation: "Add sink sanitization in audit() function (defer to 007)"
+
+  - id: RISK-005
+    name: bridge queue write surface
+    description: "h2c6r-get-compat-bridge.py can create/modify queue items"
+    likelihood: medium
+    impact: medium
+    mitigation: "Bridge uses same create_task/approve_task functions. Gate policy applies."
+    residual: "Low — bridge goes through standard functions"
+    recommendation: "Document bridge as known queue writer"
+
+summary:
+  total_risks: 5
+  high_residual: 0
+  medium_residual: 2 (RISK-001, RISK-003)
+  low_residual: 3 (RISK-002, RISK-004, RISK-005)
+  overall: "No critical bypass paths. Arm gate consumption is the primary replay protection."

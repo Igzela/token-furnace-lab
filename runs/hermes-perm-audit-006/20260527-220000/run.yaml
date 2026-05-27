@@ -1,0 +1,44 @@
+id: hermes-perm-audit-006
+experiment_id: hermes-perm-audit-006
+created: 2026-05-27T22:00:00
+completed: 2026-05-27T22:30:00
+operator: claude-code
+target: /home/igzela/Projects/hermes-gateway-lab
+
+status: COMPLETE
+
+verdicts:
+  experiment_verdict: COMPLETE
+  target_control_verdict: PASS_WITH_NOTES
+  reason: |
+    8 queue ingress questions audited. 5 pass, 3 warnings, 0 failures.
+    Worker always calls gate_policy before execution (Q002).
+    Manual injection with invalid fields denied (Q003).
+    Post-approval mutation detected (Q004).
+    Arm gate consumption prevents replay (Q006).
+    Known gaps: no approval TTL, no queue integrity check,
+    no recovery/quarantine, audit() doesn't sanitize.
+
+deliverables:
+  - scripts/queue_ingress_audit.py (verification script)
+  - knowledge/matrices/queue-ingress-matrix.yaml
+  - knowledge/matrices/queue-bypass-risk-matrix.yaml
+  - model-outputs/claude-code-queue-auditor.md
+  - model-outputs/gpt-bypass-reviewer.md
+  - model-outputs/codex-live-execution-verifier.md
+  - synthesis/comparison.md
+  - synthesis/decision-record.md
+  - synthesis/cost_estimate.md
+
+audit_results:
+  total: 8
+  pass: 5
+  warn: 3
+  fail: 0
+  verdict: PASS_WITH_NOTES
+
+key_findings:
+  - "Q003: No integrity check on queue items"
+  - "Q005: No approval TTL"
+  - "Q007: No recovery/quarantine for corrupt files"
+  - "Q008: audit() doesn't sanitize payload"

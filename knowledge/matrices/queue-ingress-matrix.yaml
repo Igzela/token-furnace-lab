@@ -1,0 +1,107 @@
+id: queue-ingress-matrix
+name: Queue Ingress / Bypass Entry Matrix
+experiment: hermes-perm-audit-006
+generated: 2026-05-27
+updated: 2026-05-27T22:00:00
+
+cases:
+  - id: Q001
+    name: queue item writer inventory
+    expected: all writers identified
+    status: pass
+    evidence:
+      - approval_queue.py: create_task, approve_task, reject_task, transition (4 paths)
+      - dry_run_executor.py: execute_dry_run (1 path)
+      - local_marker_executor.py: execute_marker (1 path)
+      - local_execution_worker.py: worker_run_once, worker_execute_permission_deny (2 paths)
+      - h2c6r-get-compat-bridge.py: direct load/save (1 path)
+      - Total: 9 production write paths to queue.json
+    severity: info
+
+  - id: Q002
+    name: worker final gate before execution
+    expected: worker calls gate_policy before side effect
+    status: pass
+    evidence:
+      - worker_run_once calls check_worker_gates at line 255
+      - check_worker_gates calls gate_policy.validate_task_gates at line 139
+      - Permission deny path calls check_permission_deny_gates at line 593
+      - check_permission_deny_gates calls gate_policy.validate_task_gates at line 503
+      - All early-return paths (no arm gate, consumed, expired, request not found) perform no side effects
+    severity: critical
+
+  - id: Q003
+    name: manual queue injection
+    expected: injected invalid item denied
+    status: pass
+    evidence:
+      - Item missing approval: denied by gate_policy (task_approved check)
+      - Item with R5 risk class: denied by gate_policy (risk_class_valid check)
+      - Well-crafted item with all fields: passes (no integrity check)
+    severity: medium
+    note: "No signature/integrity check on queue items. File-level tampering possible."
+
+  - id: Q004
+    name: post-approval queue mutation
+    expected: mutated item denied
+    status: pass
+    evidence:
+      - Mutating external_side_effect to True after approval: denied by gate_policy
+      - Worker re-reads queue from disk before execution (correct TOCTOU prevention)
+    severity: medium
+
+  - id: Q005
+    name: stale approval replay
+    expected: denied
+    status: warn
+    evidence:
+      - approval_timestamp is set but has no TTL
+      - No approval_expires_at field
+      - Once approved, task stays approved indefinitely
+    severity: medium
+    note: "Arm gate consumption prevents direct replay. Approval longevity unbounded."
+
+  - id: Q006
+    name: stale idempotency replay
+    expected: denied_or_noop
+    status: pass
+    evidence:
+      - Idempotency key is presence-checked but never consumed
+      - Arm gate IS consumed after use (line 322)
+      - Second execution attempt: arm_gate_consumed prevents replay
+    severity: medium
+    note: "Arm gate consumption is the actual replay prevention. Idempotency key is not consumed."
+
+  - id: Q007
+    name: broken queue recovery
+    expected: quarantined, not executable
+    status: warn
+    evidence:
+      - load_queue raises JSONDecodeError on corrupt file
+      - No recovery, backup, or quarantine logic
+      - Atomic writes (tmp.replace) help but don't cover all failure modes
+    severity: medium
+    note: "No quarantine mechanism. Corrupt file brings down all queue operations."
+
+  - id: Q008
+    name: recovery artifact secret redaction
+    expected: redacted before persistence
+    status: warn
+    evidence:
+      - audit() does not sanitize payload
+      - Most callers sanitize before calling audit
+      - Some callers pass unsanitized disk-loaded values (permission_id, requested_by)
+    severity: medium
+    note: "Defense-in-depth gap: audit() should sanitize its own payload."
+
+summary:
+  total: 8
+  pass: 5
+  warn: 3
+  fail: 0
+  verdict: PASS_WITH_NOTES
+  key_findings:
+    - "Q003: No integrity check on queue items (file-level tampering possible)"
+    - "Q005: No approval TTL (arm gate consumption is the actual protection)"
+    - "Q007: No recovery/quarantine for corrupt queue files"
+    - "Q008: audit() doesn't sanitize payload (caller discipline required)"
