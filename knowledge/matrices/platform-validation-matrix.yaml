@@ -1,0 +1,144 @@
+id: platform-validation-matrix
+name: "Token Furnace Lab Platform Validation Matrix"
+version: 1
+created: 2026-05-28
+experiment: token-furnace-platform-consolidation-001
+
+validated_capabilities:
+  - id: CAP01
+    name: "Multi-Model Cross-Audit"
+    status: VALIDATED
+    evidence:
+      - "Hermes Phase 1: GPT designed audit matrix, Claude Code implemented fixes"
+      - "MCP Bridge: GPT designed boundary matrix, Claude Code wrote fixture tests"
+    maturity: L3
+
+  - id: CAP02
+    name: "8-Phase Experiment Lifecycle"
+    status: VALIDATED
+    evidence:
+      - "Hermes Phase 1: completed full 8-phase lifecycle"
+      - "MCP Bridge: completed audit + verify phases"
+    maturity: L3
+
+  - id: CAP03
+    name: "Dual Verdict System"
+    status: VALIDATED
+    evidence:
+      - "Hermes: COMPLETE / PASS_WITH_NOTES"
+      - "MCP Bridge: COMPLETE / PASS"
+    maturity: L3
+
+  - id: CAP04
+    name: "Matrix-Based Evidence Collection"
+    status: VALIDATED
+    evidence:
+      - "Hermes: permission matrix with path-aware status"
+      - "MCP Bridge: 16-case boundary matrix"
+    maturity: L3
+
+  - id: CAP05
+    name: "Knowledge Distillation"
+    status: PROVEN
+    evidence:
+      - "Both phases produced wiki, decisions, evaluator-rules, matrices"
+      - "Reuse pending in future phases"
+    maturity: L2
+
+  - id: CAP06
+    name: "Cross-Project Generalization"
+    status: VALIDATED
+    evidence:
+      - "Hermes: Python permission system"
+      - "MCP Bridge: Python HTTP/stdio bridge"
+      - "Different domains, same methodology"
+    maturity: L3
+
+risk_coverage:
+  - id: RISK01
+    name: "Permission escalation"
+    covered_by: ["hermes-perm-audit"]
+
+  - id: RISK02
+    name: "Path traversal"
+    covered_by: ["hermes-perm-audit", "mcp-bridge-boundary-audit"]
+
+  - id: RISK03
+    name: "Input validation"
+    covered_by: ["hermes-perm-audit", "mcp-bridge-boundary-audit"]
+
+  - id: RISK04
+    name: "Hidden tool exposure"
+    covered_by: ["mcp-bridge-boundary-audit"]
+
+  - id: RISK05
+    name: "Subprocess lifecycle"
+    covered_by: ["mcp-bridge-boundary-audit"]
+
+  - id: RISK06
+    name: "Session isolation"
+    covered_by: ["mcp-bridge-boundary-audit"]
+
+  - id: RISK07
+    name: "Audit leakage"
+    covered_by: ["hermes-perm-audit", "mcp-bridge-boundary-audit"]
+
+  - id: RISK08
+    name: "Argument injection"
+    covered_by: ["mcp-bridge-boundary-audit"]
+
+unvalidated_capabilities:
+  - id: UNVAL01
+    name: "Public internet exposure"
+    reason: "No Cloudflare tunnel / external network testing"
+
+  - id: UNVAL02
+    name: "Multi-user auth model"
+    reason: "No real authentication/authorization testing"
+
+  - id: UNVAL03
+    name: "Long-term stability"
+    reason: "No extended runtime / stress testing"
+
+  - id: UNVAL04
+    name: "Real production deployment"
+    reason: "No production environment testing"
+
+  - id: UNVAL05
+    name: "Malicious local process"
+    reason: "No same-user process tampering testing"
+
+stable_templates:
+  - id: TPL01
+    name: "templates/experiment.yaml"
+    status: STABLE
+    used_in: ["hermes-perm-audit", "mcp-bridge-boundary-audit"]
+
+  - id: TPL02
+    name: "templates/synthesis.md"
+    status: STABLE
+    used_in: ["hermes-perm-audit", "mcp-bridge-boundary-audit"]
+
+  - id: TPL03
+    name: "templates/matrix.yaml"
+    status: STABLE
+    used_in: ["hermes-perm-audit", "mcp-bridge-boundary-audit"]
+
+  - id: TPL04
+    name: "templates/phase-closeout.md"
+    status: STABLE
+    used_in: ["hermes-perm-audit"]
+
+summary:
+  validated_capabilities: 6
+  proven_capabilities: 1
+  unvalidated_capabilities: 5
+  risk_types_covered: 8
+  stable_templates: 4
+  platform_maturity: L3-VALIDATED
+
+phase_3_criteria:
+  - "Expand risk coverage to unvalidated capabilities"
+  - "Target system with different risk profile"
+  - "Apply same lifecycle, templates, verdict system"
+  - "Produce new knowledge assets"

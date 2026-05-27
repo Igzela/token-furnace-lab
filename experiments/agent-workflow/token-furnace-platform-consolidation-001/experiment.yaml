@@ -1,0 +1,64 @@
+id: token-furnace-platform-consolidation-001
+name: "Cross-Phase Platform Consolidation"
+type: closeout
+status: planned
+created: 2026-05-28
+
+depends_on:
+  - hermes-perm-audit-phase-1
+  - mcp-bridge-boundary-audit-phase-1
+  - token-furnace-methodology-v1
+
+target:
+  repo: Igzela/token-furnace-lab
+  local_path: ~/Projects/token-furnace-lab
+
+objective:
+  primary: >
+    Consolidate Hermes Phase 1, MCP Bridge Phase 1, and methodology-v1
+    into a platform-level index and maturity assessment. Prove Token Furnace
+    Lab is a reusable methodology, not a one-project success.
+  non_goals:
+    - no new experiments
+    - no new target audits
+    - no new methodology templates
+
+core_question: >
+  What capabilities has Token Furnace Lab validated, and what remains
+  to be proven before the next expansion?
+
+consolidation_questions:
+  - "What capabilities has Token Furnace Lab validated?"
+  - "What risk types do Hermes and MCP Bridge cases cover?"
+  - "Which templates/matrices/verdict mechanisms are stable?"
+  - "What capabilities remain unvalidated?"
+  - "How should Phase 3 select its target?"
+
+outputs:
+  required:
+    - path: docs/runs/token-furnace-platform-v1-closeout.md
+      purpose: "Platform-level closeout with validated capabilities and maturity assessment"
+    - path: docs/methodology/token-furnace-cross-phase-lessons.md
+      purpose: "Cross-phase lessons learned and reusable patterns"
+    - path: knowledge/wiki/token-furnace-platform-validation.md
+      purpose: "Platform validation knowledge card"
+    - path: knowledge/matrices/platform-validation-matrix.yaml
+      purpose: "Platform capability validation matrix"
+
+models:
+  claude-code:
+    role: "Collect evidence from completed experiments, generate consolidation artifacts"
+  gpt:
+    role: "Review consolidation, validate platform maturity assessment"
+
+verdicts:
+  consolidation_verdict:
+    type: COMPLETE | INCOMPLETE
+    complete_if:
+      - all 4 artifacts created
+      - validated_capabilities documented
+      - open_questions documented
+      - next_phase recommendation provided
+
+safety:
+  scope: "Read-only consolidation, no code changes, no new experiments"
