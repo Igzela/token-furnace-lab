@@ -89,7 +89,9 @@ Technical roadmap for 22µF DC-link + sensorless FOC + water pump + TMS320F28035
 5. **Input topology**: Single-phase or three-phase? — must be confirmed before proceeding
 6. **APD energy buffer sizing**: ~~APD not required if J is sufficient~~ → **REVISED** (derivation-002): APD required for 300W, mechanical inertia alone insufficient due to torque ripple
 7. **FOC baseline validation**: Phase A design complete, needs implementation and hardware test
-8. **Low-line 4 missing checks** (GPT final): Vnom=237V optimism, Vreq(speed,torque) dependency, high-line overvoltage, current/thermal limits → **derivation-003 scope**
+8. ~~**Low-line 4 missing checks** (GPT final)~~ → **RESOLVED** (derivation-003): Vreq(speed,Iq) derived, Iq_max quadratic solved, max speed table, high-line overvoltage checked
+9. **ψ_f must be ≤ 0.103** for 300V/4000rpm (revised from 0.15 to 0.08)
+10. **300W requires ≥6632rpm** under 30% rated-torque ripple limit (66% above rated speed)
 
 ## Experiment Progress
 
@@ -97,6 +99,7 @@ Technical roadmap for 22µF DC-link + sensorless FOC + water pump + TMS320F28035
 |----|------|--------|-------|-------------|
 | derivation-001 | ripple model | COMPLETE | 90/100 | Single-phase infeasible as stable bus |
 | derivation-002 | energy balance | COMPLETE | 85/100 | Torque ripple binding, 300W needs APD, GPT final: rated-torque distinction |
+| derivation-003 | FOC voltage envelope | COMPLETE | 82/100 | ψ_f≤0.103, 300W needs ≥6632rpm, high-line 240W limit |
 | phase-a-001 | FOC design | COMPLETE | - | F28035 budget OK, modules defined |
 | phase-a-002 | FOC impl | PENDING | - | Next: implement on simulator |
 | phase-a-003 | FOC hw test | PENDING | - | Next: validate on 1360µF hardware |
@@ -109,4 +112,6 @@ Technical roadmap for 22µF DC-link + sensorless FOC + water pump + TMS320F28035
 - E1: derivation-001 — Pavg_ref + ripple model (score 90/100, PASS)
 - E2: derivation-002 — Energy balance envelope (score 85/100, PASS_WITH_NOTES)
 - E2-final: derivation-002 GPT final verification — rated-torque distinction, low-line 4 gaps, derivation-003 recommended
-- E3: phase-a-001 — FOC baseline design (COMPLETE)
+- E3: derivation-003 — FOC voltage/saturation envelope (score 82/100, PASS_WITH_NOTES)
+- E3-final: derivation-003 GPT verification — all formulas pass, solution fork recommended
+- E4: phase-a-001 — FOC baseline design (COMPLETE)
