@@ -1,0 +1,154 @@
+id: hermes-perm-audit-002
+name: Deny Path Test Matrix
+experiment: hermes-perm-audit-001
+generated: 2026-05-27
+
+groups:
+  - name: live-execution-basics
+    cases:
+      - id: D001
+        name: LIVE_ENABLED missing
+        condition: "LIVE_ENABLED env var not set"
+        expected: deny
+        status: untested
+      - id: D002
+        name: LIVE_ENABLED=false
+        condition: "LIVE_ENABLED=false"
+        expected: deny
+        status: untested
+      - id: D003
+        name: live scope requested but not enabled
+        condition: "requested_scope=hermes.execute.live but live not enabled"
+        expected: deny
+        status: untested
+      - id: D004
+        name: scope not in allowed list
+        condition: "requested_scope not in allowed_scopes"
+        expected: deny
+        status: untested
+
+  - name: approval
+    cases:
+      - id: D005
+        name: missing Charlie local approval
+        condition: "no local approval marker found"
+        expected: deny
+        status: untested
+      - id: D006
+        name: ChatGPT-only approval
+        condition: "approval_source=chatgpt, no local approval"
+        expected: deny
+        status: untested
+      - id: D007
+        name: approval TTL expired
+        condition: "approval_timestamp + TTL < now"
+        expected: deny
+        status: untested
+      - id: D008
+        name: approval marker format error
+        condition: "marker file exists but format invalid"
+        expected: deny
+        status: untested
+      - id: D009
+        name: approval mismatch
+        condition: "approval does not match current action/request"
+        expected: deny
+        status: untested
+
+  - name: idempotency
+    cases:
+      - id: D010
+        name: missing idempotency key
+        condition: "task has no idempotency_key field"
+        expected: deny
+        status: untested
+      - id: D011
+        name: duplicate idempotency key
+        condition: "idempotency_key already used in completed task"
+        expected: deny_or_noop
+        status: untested
+      - id: D012
+        name: idempotency key mismatch
+        condition: "idempotency_key does not match request content"
+        expected: deny
+        status: untested
+      - id: D013
+        name: stale key after queue recovery
+        condition: "queue recovered, old idempotency_key reused"
+        expected: deny
+        status: untested
+
+  - name: rollback
+    cases:
+      - id: D014
+        name: missing rollback plan
+        condition: "task has no rollback_plan field"
+        expected: deny
+        status: untested
+      - id: D015
+        name: empty rollback plan
+        condition: "rollback_plan field is empty string"
+        expected: deny
+        status: untested
+      - id: D016
+        name: rollback path mismatch
+        condition: "rollback_plan does not cover touched_paths"
+        expected: deny
+        status: untested
+      - id: D017
+        name: undeclared irreversible operation
+        condition: "action has irreversible_operations but not declared"
+        expected: deny
+        status: untested
+
+  - name: risk-class
+    cases:
+      - id: D018
+        name: R4 external side effect
+        condition: "risk_class=R4 requested"
+        expected: deny
+        status: untested
+      - id: D019
+        name: R5 private content
+        condition: "risk_class=R5 requested"
+        expected: deny
+        status: untested
+      - id: D020
+        name: unknown risk class
+        condition: "risk_class value not in defined set"
+        expected: deny
+        status: untested
+      - id: D021
+        name: missing risk class
+        condition: "risk_class field absent"
+        expected: deny
+        status: untested
+
+  - name: audit-logging
+    cases:
+      - id: D022
+        name: audit path not writable
+        condition: "audit output directory is read-only"
+        expected: deny
+        status: untested
+      - id: D023
+        name: audit write failure
+        condition: "audit() call fails during execution"
+        expected: deny
+        status: untested
+      - id: D024
+        name: secret in reason field
+        condition: "reason contains secret pattern, unsanitized"
+        expected: deny_or_redact
+        status: untested
+      - id: D025
+        name: missing dry-run preview
+        condition: "no dry-run preview exists for live request"
+        expected: deny
+        status: untested
+
+summary:
+  total: 25
+  untested: 25
+  passed: 0
+  failed: 0

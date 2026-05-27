@@ -13,7 +13,7 @@ Target: /home/igzela/Projects/hermes-gateway-lab
 - [x] codex-risk-reviewer output (18 findings: 8 high, 6 medium, 4 low)
 - [x] synthesis complete (comparison.md, decision-record.md)
 - [x] decision record written (6 accepted, 3 rejected)
-- [ ] knowledge distilled (pending: knowledge/ directory)
+- [x] knowledge distilled (4 wiki, 4 decisions, 3 failures, 4 evaluator rules, 3 reusable prompts, 1 matrix)
 
 ### Key Finding
 Worker gate function (`check_worker_gates`) diverges from canonical (`local_marker_executor.check_gates`). 6+ required gates missing. Critical bug blocks live execution.
