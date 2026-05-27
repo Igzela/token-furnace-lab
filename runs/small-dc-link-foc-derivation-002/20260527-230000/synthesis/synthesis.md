@@ -20,6 +20,9 @@ Energy balance formula is correct. Numerical error in voltage envelope was caugh
 | Low-line feasibility | Not analyzed | 300W NOT feasible at 168Vac | GPT added |
 | Mechanical inertia absorption | Speed ripple 0.48% OK | Torque ripple ≈ average torque | GPT found hidden cost |
 | Torque ripple cost | Not analyzed | 100% modulation at full power | GPT added |
+| Torque ripple formula | T_ripple/T_avg < 30% | T_ripple < 30% × T_rated (GPT final) | GPT corrected terminology |
+| Low-line gaps | Not fully analyzed | 4 missing checks identified (GPT final) | GPT added |
+| Pmax table | Speed-dependent Vreq | Fixed Vreq table (different approach) | Both valid under different assumptions |
 
 ## Key Corrections Applied
 
@@ -29,6 +32,8 @@ Energy balance formula is correct. Numerical error in voltage envelope was caugh
 4. **Speed ripple vs inertia table**: Added J×speed×power lookup table (GPT request)
 5. **Torque ripple cost**: Documented 100% modulation at full power (GPT finding)
 6. **Operating region**: Updated to show torque ripple is binding constraint
+7. **Torque ripple formula distinction**: "T_ripple/T_avg < 30%" → "T_ripple < 30% × T_rated" (GPT final verification)
+8. **Low-line 4 missing checks**: Vnom optimism, Vreq(speed,torque) dependency, high-line overvoltage, current/thermal limits (GPT final verification)
 
 ## Critical Findings
 
@@ -72,7 +77,9 @@ dc_link_constraints:
 
 ## Next Steps
 
-1. **Confirm input topology**: Single-phase or three-phase? (GPT: "单相输入100Hz功率缺口到底由谁吸收？")
-2. **If single-phase**: APD or larger capacitance required for 300W
-3. **If three-phase**: Re-derive with 3× reduced energy swing
-4. **Proceed with Phase A FOC baseline**: Independent of 22µF
+1. **derivation-003**: Vreq(speed, torque) + Iq limit + voltage saturation envelope (GPT recommended)
+2. **Fix torque ripple terminology**: Change constraint name to "rated-torque ripple limit"
+3. **Add high-line overvoltage check**: Vmax at Vnom=354V may exceed 400V component rating
+4. **Add current/thermal limit check**: Low-line requires higher DC bus current
+5. **Confirm input topology**: Single-phase or three-phase?
+6. **Proceed with Phase A-002**: FOC implementation on simulator (independent of 22µF)
