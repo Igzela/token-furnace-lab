@@ -1,0 +1,64 @@
+phase_id: small-dc-link-foc-derivation-phase-1
+run_id: 001
+type: derivation
+goal: >
+  Derive Pavg_ref calculation and 22µF DC-link ripple model for
+  sensorless FOC water pump drive. This is the critical missing piece
+  from the PDF extraction phase.
+
+inputs:
+  target_dc_link_capacitance: 22µF
+  inverter_current_limit: 20A peak
+  input_voltage_range: 168-250Vac
+  motor_phase_resistance: Rs (to be measured)
+  current_control_platform: TMS320F28035
+  baseline_observed: 1360µF can run 4000rpm at 300Vdc light load
+
+objectives:
+  1. Derive Pavg_ref (average power reference) from power balance
+  2. Model 22µF DC-link voltage ripple analytically
+  3. Derive ripple magnitude as function of load and speed
+  4. Assess if sensorless FOC is viable under predicted ripple
+  5. Define acceptable ripple limits for stable operation
+
+deliverables:
+  - Pavg_ref derivation with assumptions
+  - 22µF ripple model (analytical)
+  - Ripple magnitude table (vs speed/load)
+  - Sensorless FOC robustness assessment
+  - Design rules for capacitor selection
+
+model_roles:
+  claude_code:
+    role: Mathematical derivation and analysis
+    outputs:
+      - claude-code-derivation.md
+  gpt:
+    role: Independent verification and engineering judgment
+    outputs:
+      - gpt-verification.md
+  codex:
+    role: Sanity check on equations
+    outputs:
+      - codex-sanity-check.md
+    optional: true
+
+evaluation:
+  dimensions:
+    mathematical_correctness:
+      weight: 35
+      description: Equations are dimensionally consistent and physically meaningful
+    engineering_practicality:
+      weight: 30
+      description: Results are practical and implementable
+    completeness:
+      weight: 20
+      description: All critical gaps addressed
+    evidence_quality:
+      weight: 15
+      description: Assumptions stated, derivations traceable
+
+verdicts:
+  PASS: Complete derivation with verified equations and practical design rules
+  PASS_WITH_NOTES: Partial derivation, some assumptions unverified
+  FAIL: Equations inconsistent or results impractical
