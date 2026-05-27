@@ -1,0 +1,67 @@
+id: hermes-perm-audit-003
+name: "Hermes Gateway Lab Worker Gate Conformance Fix"
+type: agent-workflow
+created: 2026-05-27
+status: planned
+depends_on: hermes-perm-audit-002
+
+objective: |
+  Make worker_daemon use the same canonical gate logic as marker_executor,
+  or prove behavioral equivalence through shared tests.
+
+  The 002 experiment found 6/25 deny cases diverge between paths:
+  - D001/D002: LIVE_ENABLED not checked by worker
+  - D003: scope not checked by worker
+  - D010: idempotency key not checked by worker
+  - D012: idempotency key match not checked by worker
+
+  003 must fix these gaps and verify with conformance tests.
+
+scope:
+  allowed:
+    - Modify local_execution_worker.py to import canonical gate logic
+    - Add rollback_plan field to tasks
+    - Add secret redaction to sanitize_text
+    - Write and run conformance tests
+    - Run deny-path tests
+  forbidden:
+    - Do not enable live execution
+    - Do not execute live actions
+    - Do not modify marker executor gate logic
+    - Do not change approval flow
+
+p0_fixes:
+  - "Worker must import flags_from_env from local_marker_executor"
+  - "Worker must import or delegate to check_gates from local_marker_executor"
+  - "D001/D002/D010 must change from missing to complete on worker path"
+  - "D014: Add rollback_plan field, gate must deny if missing for live-intent"
+  - "D024: sanitize_text must scrub secret patterns before audit persistence"
+  - "C001-C003 conformance tests must pass"
+
+success_criteria:
+  - gate-conformance-matrix.yaml: C001-C003 all pass
+  - deny-path-matrix.yaml: D001/D002/D010 complete on worker path
+  - No new divergent cases introduced
+  - All existing conformant cases remain conformant
+
+models:
+  claude-code:
+    role: "Implement gate conformance fix"
+    prompt: prompts/claude-code-gate-fixer.md
+  gpt:
+    role: "Review fix architecture"
+    prompt: prompts/gpt-fix-reviewer.md
+  codex:
+    role: "Verify no regression"
+    prompt: prompts/codex-regression-checker.md
+
+verdicts:
+  experiment_verdict:
+    type: COMPLETE / INCOMPLETE
+  target_control_verdict:
+    type: PASS / PASS_WITH_NOTES / FAIL
+    pass_only_if:
+      - C001-C003 pass
+      - D001/D002/D010 complete on worker path
+      - No new divergent cases
+      - No regression in existing conformant cases

@@ -1,0 +1,202 @@
+id: hermes-gate-conformance-matrix
+name: Gate Conformance Matrix
+experiment: hermes-perm-audit-002
+generated: 2026-05-27
+
+# Tests whether worker_daemon path conforms to marker_executor canonical path
+
+paths:
+  - marker_executor
+  - worker_daemon
+
+conformance_cases:
+  - id: C001
+    name: worker uses canonical gate function
+    expected: true
+    actual: false
+    status: fail
+    evidence:
+      - local_execution_worker.py:113-193 defines independent check_worker_gates
+      - Never imports check_gates from local_marker_executor
+      - Never imports flags_from_env from local_marker_executor
+    severity: critical
+
+  - id: C002
+    name: worker independent gate covers all marker gates
+    expected: true
+    actual: false
+    status: fail
+    evidence:
+      - Worker missing: LIVE_ENABLED, idempotency key, scope re-validation, rollback plan, audit writability
+      - Worker has: approval check, arm gate check, dry-run check, R4/R5 check, private content check
+      - Coverage: ~10/25 vs marker's ~12/25
+    severity: critical
+
+  - id: C003
+    name: worker and marker produce same deny/allow for P0 cases
+    expected: true
+    actual: false
+    status: fail
+    evidence:
+      - D001: marker denies, worker allows (LIVE_ENABLED missing)
+      - D002: marker denies, worker allows (LIVE_ENABLED=false)
+      - D010: marker denies, worker allows (idempotency key missing)
+      - D005/D006/D018/D019: both deny (conformant)
+    severity: critical
+
+  - id: C004
+    name: worker has no bypass entry that skips marker gates
+    expected: true
+    actual: unknown
+    status: untested
+    evidence:
+      - Worker is a daemon that processes requests from queue
+      - Marker executor is called by CLI commands
+      - Different entry points, same queue file
+      - Need to verify: can a request reach worker without going through marker gates?
+    severity: high
+
+  - id: C005
+    name: worker does not execute after deny
+    expected: true
+    actual: partial
+    status: partial
+    evidence:
+      - check_worker_gates raises WorkerError on deny (line 193)
+      - worker_run_once catches WorkerError (line 232)
+      - But: if gate check itself has bug (missing gate), execution proceeds
+    severity: critical
+
+per_case_conformance:
+  D001:
+    marker: deny
+    worker: allow
+    conformance: fail
+    gap: check_worker_gates has no LIVE_ENABLED check
+  D002:
+    marker: deny
+    worker: allow
+    conformance: fail
+    gap: same as D001
+  D003:
+    marker: deny (partial)
+    worker: allow
+    conformance: fail
+    gap: no scope check in worker
+  D004:
+    marker: deny
+    worker: deny (trusts upstream)
+    conformance: pass
+  D005:
+    marker: deny
+    worker: deny
+    conformance: pass
+  D006:
+    marker: deny
+    worker: deny
+    conformance: pass
+  D007:
+    marker: deny (partial)
+    worker: deny (partial)
+    conformance: pass
+    note: both only check arm gate, not approval_timestamp
+  D008:
+    marker: deny (missing)
+    worker: deny (missing)
+    conformance: pass
+    note: both missing - no marker format validation
+  D009:
+    marker: deny (partial)
+    worker: deny (partial)
+    conformance: pass
+  D010:
+    marker: deny
+    worker: allow
+    conformance: fail
+    gap: check_worker_gates has no idempotency key check
+  D011:
+    marker: deny (partial)
+    worker: deny (partial)
+    conformance: pass
+  D012:
+    marker: deny (partial)
+    worker: allow
+    conformance: fail
+    gap: worker trusts dry-run, no re-validation
+  D013:
+    marker: deny (partial)
+    worker: deny (partial)
+    conformance: pass
+  D014:
+    marker: deny (missing)
+    worker: deny (missing)
+    conformance: pass
+    note: both missing - no rollback plan validation
+  D015:
+    marker: deny (missing)
+    worker: deny (missing)
+    conformance: pass
+    note: both missing
+  D016:
+    marker: deny (missing)
+    worker: deny (missing)
+    conformance: pass
+    note: both missing
+  D017:
+    marker: deny (partial)
+    worker: deny (partial)
+    conformance: pass
+  D018:
+    marker: deny
+    worker: deny
+    conformance: pass
+  D019:
+    marker: deny
+    worker: deny
+    conformance: pass
+  D020:
+    marker: deny
+    worker: deny
+    conformance: pass
+  D021:
+    marker: deny
+    worker: deny
+    conformance: pass
+  D022:
+    marker: deny (partial)
+    worker: deny (partial)
+    conformance: pass
+    note: both partial - no pre-write check
+  D023:
+    marker: deny (partial)
+    worker: deny (partial)
+    conformance: pass
+    note: both partial - no error handling
+  D024:
+    marker: deny (missing)
+    worker: deny (missing)
+    conformance: pass
+    note: both missing - no secret redaction
+  D025:
+    marker: deny
+    worker: deny
+    conformance: pass
+
+summary:
+  conformance_cases:
+    total: 5
+    pass: 0
+    fail: 3
+    partial: 1
+    untested: 1
+  per_case:
+    total: 25
+    conformant: 19
+    divergent: 6
+  divergent_cases:
+    - D001: LIVE_ENABLED missing (worker allows, marker denies)
+    - D002: LIVE_ENABLED=false (worker allows, marker denies)
+    - D003: live scope not enabled (worker allows, marker denies)
+    - D010: idempotency key missing (worker allows, marker denies)
+    - D012: idempotency key mismatch (worker allows, marker denies)
+  verdict: "6/25 cases diverge. Worker daemon is less restrictive than canonical marker executor."
