@@ -1,0 +1,27 @@
+experiment: phase-c-001
+timestamp: "20260528-090000"
+branch: exp/hermes-perm-audit-001
+status: complete
+score: 82
+verdict: PASS_WITH_NOTES
+parent_experiment: phase-b-004
+gpt_final_score: 82
+gpt_verdict: PASS_WITH_NOTES
+key_findings:
+  - 22µF + 90% APD not robust across medium-load single-phase
+  - 48/192 configs pass (25%)
+  - Rated torque: 0.31% ripple (passes), medium load: 20-90% (fails)
+  - 100µF much more robust
+  - Don't conclude three-phase is required yet
+artifacts:
+  - model_outputs/dc_link_model.md
+  - model_outputs/dc_link_sim.py
+  - model_outputs/sweep_results.md
+  - model_outputs/gpt-review.md
+  - model_outputs/synthesis.md
+  - synthesis/synthesis.md
+next_step: phase_c_002_three_phase_comparison
+not_yet_validated:
+  - three-phase rectified input ripple
+  - adaptive APD (95%, 98%)
+  - capacitance threshold (47, 68µF)

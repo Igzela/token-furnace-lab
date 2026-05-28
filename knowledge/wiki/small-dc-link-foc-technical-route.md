@@ -110,6 +110,7 @@ Technical roadmap for 22µF DC-link + sensorless FOC + water pump + TMS320F28035
 | phase-b-002 | I-f startup corrected | COMPLETE | 82/100 | GPT PASS_WITH_NOTES. All B-001 corrections applied. 252/252 pass. ψ_f=0.08Wb, expanded observer, observer-gated blend |
 | phase-b-003 | Three-threshold blend | COMPLETE | 90/100 | GPT PASS. Three-threshold blend + anti-chatter. 189/189 pass (100%), max blend error 5°, implementation-ready |
 | phase-b-004 | State machine impl spec | COMPLETE | 78/100 | GPT PASS_WITH_NOTES. 7 states, gated transitions, 2KB trace, angle_t, 15 faults, retry escalation. Corrected trace RAM and angle type |
+| phase-c-001 | DC-link ripple mgmt | COMPLETE | 82/100 | GPT PASS_WITH_NOTES. 22µF+90% APD not robust across medium-load. 48/192 pass (25%). Don't conclude three-phase required yet |
 
 ## References
 
@@ -131,3 +132,4 @@ Technical roadmap for 22µF DC-link + sensorless FOC + water pump + TMS320F28035
 - E8: phase-b-002 — Corrected I-f startup (82/100 PASS_WITH_NOTES, COMPLETE): All B-001 corrections applied, ψ_f=0.08Wb, expanded observer, 252/252 pass, 35.5° max error needs three thresholds
 - E9: phase-b-003 — Three-threshold blend + anti-chatter (90/100 PASS, COMPLETE): 189/189 pass, max blend error 5°, implementation-ready state machine with logging and fallback profiles
 - E10: phase-b-004 — State machine implementation spec (78/100 PASS_WITH_NOTES, COMPLETE): C header+impl, 2KB trace, angle_t, 15 faults, retry escalation. GPT corrected trace RAM (56KB→2KB) and angle type
+- E11: phase-c-001 — DC-link ripple management (82/100 PASS_WITH_NOTES, COMPLETE): 22µF+90% APD not robust across medium-load, 48/192 pass. GPT: don't conclude three-phase required yet, explore adaptive APD and capacitance threshold
