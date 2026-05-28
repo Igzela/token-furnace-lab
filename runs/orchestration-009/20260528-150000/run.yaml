@@ -1,0 +1,27 @@
+task_id: orchestration-009
+title: "Outcome Memory and Policy Tuning Loop"
+objective: >
+  Build adaptive learning layer: ingest 001-008 run outcomes into machine-readable
+  memory, extract reusable lessons, generate auditable policy suggestions, enforce
+  safety gate for self-modification (auto-tighten only, never auto-loosen).
+
+status: COMPLETE
+verdict: PASS
+
+artifacts:
+  - scripts/orchestrator_learn.py
+  - knowledge/orchestrator/outcome_memory.jsonl
+  - knowledge/orchestrator/policy_registry.yaml
+  - knowledge/orchestrator/policy_suggestions.yaml
+
+metrics:
+  runs_ingested: 10
+  lessons_extracted: 13
+  policy_suggestions: 8
+  active_policies: 10
+  blocked_policies: 4
+
+budget:
+  max_iterations: 4
+  actual_iterations: 3
+  wall_time_seconds: 180

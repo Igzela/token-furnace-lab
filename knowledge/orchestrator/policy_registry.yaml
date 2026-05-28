@@ -1,0 +1,131 @@
+# Policy Registry — Active orchestrator policies
+# Source: orchestration-001 through orchestration-008
+
+version: "1.0"
+last_updated: "2026-05-28"
+
+active_policies:
+  - id: POL-001
+    name: validator_fail_overrides_review_score
+    source: orchestration-003
+    status: active
+    risk: low
+    description: "Schema/validator failure must override reviewer score — no exceptions"
+    validated_by: "10/10 failure injection tests"
+
+  - id: POL-002
+    name: blocking_findings_union_wins
+    source: orchestration-005
+    status: active
+    risk: low
+    description: "Blocking findings take union across reviewers, not average. Score cannot cancel blocking."
+    validated_by: "review_fusion.py + orchestration-005"
+
+  - id: POL-003
+    name: unsafe_timeout_transition_requires_repair
+    source: orchestration-008
+    status: active
+    risk: low
+    description: "PWM-active timeout transitions without explicit safe action require REPAIR"
+    validated_by: "9/9 calibration cases"
+
+  - id: POL-004
+    name: cascade_scan_after_repair
+    source: orchestration-006
+    status: active
+    risk: low
+    description: "After any dangling-state repair, run cascade target scan on same sequence"
+    validated_by: "orchestration-006 cascade pattern discovery"
+
+  - id: POL-005
+    name: cross_audit_for_safety_critical
+    source: orchestration-004
+    status: active
+    risk: low
+    description: "Safety-critical artifacts should be cross-audited by different model class"
+    validated_by: "GPT found 2 HIGH blocking findings Claude missed"
+
+  - id: POL-006
+    name: confidence_multi_source_synthesis
+    source: orchestration-008
+    status: active
+    risk: low
+    description: "Confidence must synthesize validator + evidence + reviewer convergence, not just model self-report"
+    validated_by: "5-component confidence scoring"
+
+  - id: POL-007
+    name: failure_injection_regression_required
+    source: orchestration-003
+    status: active
+    risk: low
+    description: "Any gate policy change must be validated with failure injection before activation"
+    validated_by: "orchestration-003 10/10 benchmark"
+
+  - id: POL-008
+    name: parallel_dispatch_requires_isolation
+    source: orchestration-007
+    status: active
+    risk: low
+    description: "Parallel subproblems must run in isolated worktrees with quarantine on failure"
+    validated_by: "orchestration-007 3/3 parallel dispatch"
+
+  - id: POL-009
+    name: repeated_low_findings_informational
+    source: orchestration-008
+    status: active
+    risk: low
+    description: "Repeated LOW findings without blocking are informational, not REPAIR triggers"
+    validated_by: "confidence_calibrator.py round 2 ACCEPT decision"
+
+  - id: POL-010
+    name: self_tightening_allowed
+    source: orchestration-009
+    status: active
+    risk: low
+    description: "System may autonomously add validation, evidence checks, stricter gates — never weaken"
+    validated_by: "orchestration-009 safety gate design"
+
+blocked_policies:
+  - id: BLOCKED-001
+    name: auto_merge_without_gate
+    reason: "Merge must always go through fusion gate"
+    risk: high
+
+  - id: BLOCKED-002
+    name: weaken_validator_without_approval
+    reason: "Validator weakening requires human approval"
+    risk: high
+
+  - id: BLOCKED-003
+    name: reduce_escalation_conditions
+    reason: "Escalation conditions can only be strengthened"
+    risk: high
+
+  - id: BLOCKED-004
+    name: lower_score_thresholds
+    reason: "Score thresholds can only be raised"
+    risk: high
+
+policy_change_risk_levels:
+  low:
+    examples:
+      - add validator warning
+      - add prompt reminder
+      - add report field
+      - add timeout classifier rule
+    apply_mode: auto_with_log
+
+  medium:
+    examples:
+      - change gate threshold
+      - change REPAIR vs ACCEPT rule
+      - add new blocking condition
+    apply_mode: require_cross_review
+
+  high:
+    examples:
+      - allow auto-merge
+      - weaken validator
+      - reduce escalation conditions
+      - lower score thresholds
+    apply_mode: human_approval_required

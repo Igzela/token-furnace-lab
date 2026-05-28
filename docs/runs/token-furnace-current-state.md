@@ -20,7 +20,8 @@
 | Phase 8 | Review fusion + multi-reviewer gate | orchestration-005 | COMPLETE/PASS | 95f11b6 |
 | Phase 9 | Fused repair execution benchmark | orchestration-006 | COMPLETE/ACCEPT | 8074c82 |
 | Phase 10 | Multi-worktree parallel dispatch | orchestration-007 | COMPLETE/PASS | 4a2b85e |
-| Phase 11 | Confidence & escalation calibration | orchestration-008 | COMPLETE/PASS | pending |
+| Phase 11 | Confidence & escalation calibration | orchestration-008 | COMPLETE/PASS | 92cb116 |
+| Phase 12 | Outcome memory + policy tuning loop | orchestration-009 | COMPLETE/PASS | pending |
 
 ## Platform Consolidation
 
@@ -59,6 +60,10 @@ Capabilities validated:
 - **Decision policy**: Priority-ordered ACCEPT/REPAIR/ESCALATE/REJECT based on conditions
 - **Timeout classifier**: Heuristic-based classification of timeout transitions with negation handling
 - **Escalation report**: Structured report for human decision when gate outputs ESCALATE
+- **Outcome memory**: Machine-readable run history (outcome_memory.jsonl) with 20 fields per outcome
+- **Learning extractor**: orchestrator_learn.py — ingest, suggest, stats, check-self-modify
+- **Policy registry**: 10 active policies + 4 blocked, with risk-level classification
+- **Self-modification gate**: Auto-tighten allowed, auto-loosen blocked without human approval
 
 ## Reusable Templates
 

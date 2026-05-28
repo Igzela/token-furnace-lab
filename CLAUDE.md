@@ -98,6 +98,7 @@ Active Research — 个人研究项目，迭代中，无外部用户。
   - orchestration-006: fused repair execution benchmark (COMPLETE — closed-loop verified, ACCEPT 92/90, 2 repair rounds)
   - orchestration-007: multi-worktree parallel dispatch (COMPLETE — 3/3 subproblems parallel, artifacts collected, ~30s wall time)
   - orchestration-008: confidence & escalation calibration (COMPLETE/PASS — 9/9 calibration cases, 3/3 pipeline tests, 5-component confidence scoring, decision policy, timeout classifier)
+  - orchestration-009: outcome memory + policy tuning loop (COMPLETE/PASS — 10 runs ingested, 13 lessons, 8 policy suggestions, 10 active policies, self-modification gate)
 
 ### Key Decisions (FOC derivation series)
 
@@ -117,6 +118,7 @@ Active Research — 个人研究项目，迭代中，无外部用户。
 - **Cascade pattern**: Fixing one dangling transition target exposes related ones in the same sequence; re-review catches defects the original review missed
 - **Closed-loop verified**: review_fusion → repair → re-review → fusion → ACCEPT works in 2 rounds
 - **Confidence calibration**: 5-component weighted scoring; repeated LOW findings are informational, not blocking; timeout classifier defaults to REVIEW for ambiguous patterns
+- **Adaptive learning**: outcome_memory.jsonl stores machine-readable run history; orchestrator_learn.py extracts lessons and generates policy suggestions; system can auto-tighten but never auto-loosen without human approval
 
 ## 自主推进协议
 

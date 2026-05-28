@@ -1,0 +1,85 @@
+generated_from: 10 run outcomes
+suggestions:
+- confidence: high
+  id: PS-001
+  observed_in:
+  - 20260528-105029
+  - orchestration-004
+  proposed_change_type: prompt_rule
+  requires_human_approval: false
+  risk: low
+  suggestion: Cross-audit by different model class catches safety gaps single reviewer
+    misses.
+  trigger_pattern: multi_model_artifact_review
+- confidence: high
+  id: PS-002
+  observed_in:
+  - orchestration-008/20260528-140000
+  proposed_change_type: gate_policy
+  requires_human_approval: false
+  risk: low
+  suggestion: Route timeout/transition semantics to dedicated classifier before accepting.
+  trigger_pattern: timeout_transition_findings
+- confidence: high
+  id: PS-003
+  observed_in:
+  - orchestration-003
+  proposed_change_type: meta_validator
+  requires_human_approval: false
+  risk: low
+  suggestion: Any gate policy change must be validated with failure injection before
+    activation.
+  trigger_pattern: gate_policy_change
+- confidence: high
+  id: PS-004
+  observed_in:
+  - 20260528-092721
+  - 20260528-101549
+  - orchestration-008/20260528-140000
+  - orchestration-007
+  proposed_change_type: gate_policy
+  requires_human_approval: false
+  risk: low
+  suggestion: Repeated LOW findings without blocking are informational, not REPAIR
+    triggers.
+  trigger_pattern: multiple_low_findings_no_blocking
+- confidence: high
+  id: PS-005
+  observed_in:
+  - orchestration-006
+  proposed_change_type: validator_rule
+  requires_human_approval: false
+  risk: low
+  suggestion: After any dangling-state repair, run cascade target scan on same sequence.
+  trigger_pattern: state_machine_repair_with_dangling_target
+- confidence: high
+  id: PS-006
+  observed_in:
+  - orchestration-005
+  - orchestration-006
+  proposed_change_type: gate_policy
+  requires_human_approval: false
+  risk: low
+  suggestion: Review fusion must use findings union — score cannot cancel blocking
+    findings.
+  trigger_pattern: multi_reviewer_fusion
+- confidence: high
+  id: PS-007
+  observed_in:
+  - orchestration-007
+  proposed_change_type: validator_rule
+  requires_human_approval: false
+  risk: low
+  suggestion: Parallel dispatch with max_parallel=3 is safe for independent subproblems.
+  trigger_pattern: parallel_subproblem_execution
+- confidence: high
+  id: PS-008
+  observed_in:
+  - orchestration-008
+  proposed_change_type: gate_policy
+  requires_human_approval: false
+  risk: low
+  suggestion: Default timeout classifier to REVIEW for ambiguous patterns — fail-safe
+    not fail-open.
+  trigger_pattern: confidence_calibration_with_safety_ambiguity
+total_suggestions: 8
