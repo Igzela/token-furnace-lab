@@ -549,6 +549,77 @@ def gate_result_yaml(result: GateResult) -> str:
     }, default_flow_style=False, sort_keys=False)
 
 
+def evaluate_fused_gate(task: Dict, fused_findings: List[Finding], fused_scores: Dict[str, int],
+                        fused_verdicts: Dict[str, str], round_num: int,
+                        artifact_exists: bool = True,
+                        validator_errors: Optional[List[str]] = None,
+                        evidence_errors: Optional[List[str]] = None) -> GateResult:
+    """Evaluate gate using fused multi-reviewer findings.
+    Same priority rules as evaluate_gate, but operates on merged findings.
+    """
+    score_min = task.get("score_min", 80)
+    max_repair = task.get("max_repair_rounds", 2)
+
+    if not artifact_exists:
+        return GateResult("REJECT", round_num, 0, "FAIL", 0, "Artifact missing", "escalate")
+
+    if validator_errors:
+        crit_errors = [e for e in validator_errors if any(sev in e for sev in ("CRITICAL", "HIGH"))]
+        if crit_errors:
+            if round_num < max_repair:
+                return GateResult("REPAIR", round_num, min(fused_scores.values()) if fused_scores else 0,
+                                  "PASS_WITH_NOTES", len(crit_errors),
+                                  f"Validator errors: {'; '.join(crit_errors[:3])}", "repair")
+            return GateResult("ESCALATE", round_num, min(fused_scores.values()) if fused_scores else 0,
+                              "PASS_WITH_NOTES", len(crit_errors),
+                              f"Validator errors after {round_num} rounds", "escalate")
+
+    if evidence_errors:
+        if round_num < max_repair:
+            return GateResult("REPAIR", round_num, min(fused_scores.values()) if fused_scores else 0,
+                              "PASS_WITH_NOTES", len(evidence_errors),
+                              f"Evidence errors: {'; '.join(evidence_errors[:3])}", "repair")
+        return GateResult("ESCALATE", round_num, min(fused_scores.values()) if fused_scores else 0,
+                          "PASS_WITH_NOTES", len(evidence_errors),
+                          f"Evidence errors after {round_num} rounds", "escalate")
+
+    # Blocking findings from fused reviews
+    blocking = [f for f in fused_findings if f.blocking]
+    if blocking:
+        if round_num < max_repair:
+            return GateResult("REPAIR", round_num, min(fused_scores.values()) if fused_scores else 0,
+                              "PASS_WITH_NOTES", len(blocking),
+                              f"{len(blocking)} blocking findings (fused)", "repair")
+        return GateResult("ESCALATE", round_num, min(fused_scores.values()) if fused_scores else 0,
+                          "PASS_WITH_NOTES", len(blocking),
+                          f"{len(blocking)} blocking findings after {round_num} rounds (fused)", "escalate")
+
+    # Score below threshold (check all reviewers)
+    min_score = min(fused_scores.values()) if fused_scores else 0
+    if min_score < score_min:
+        if round_num < max_repair:
+            return GateResult("REPAIR", round_num, min_score, "PASS_WITH_NOTES", 0,
+                              f"Score {min_score} < {score_min} (fused min)", "repair")
+        return GateResult("ESCALATE", round_num, min_score, "PASS_WITH_NOTES", 0,
+                          f"Score {min_score} < {score_min} after {round_num} rounds (fused)", "escalate")
+
+    # All verdicts accepted
+    all_accept = all(v in ACCEPT_VERDICTS for v in fused_verdicts.values())
+    if all_accept:
+        avg_score = sum(fused_scores.values()) / len(fused_scores) if fused_scores else 0
+        return GateResult("ACCEPT", round_num, int(avg_score), "PASS_WITH_NOTES", 0,
+                          f"Avg score {avg_score:.0f}, all verdicts PASS (fused)", "done")
+
+    # Some verdicts not accepted
+    bad = [f"{r}={v}" for r, v in fused_verdicts.items() if v not in ACCEPT_VERDICTS]
+    if round_num < max_repair:
+        return GateResult("REPAIR", round_num, min(fused_scores.values()) if fused_scores else 0,
+                          "PASS_WITH_NOTES", 0, f"Non-accept verdicts: {', '.join(bad)} (fused)", "repair")
+    return GateResult("ESCALATE", round_num, min(fused_scores.values()) if fused_scores else 0,
+                      "PASS_WITH_NOTES", 0,
+                      f"Non-accept verdicts after {round_num} rounds: {', '.join(bad)} (fused)", "escalate")
+
+
 # --- Worktree isolation ---
 
 def create_worktree(run_dir: Path, subproblem_id: str) -> Optional[Path]:
@@ -898,6 +969,41 @@ def run_validate(artifact_path: Path, artifact_type: str) -> None:
         print(f"PASS: {artifact_path.name} (all validators passed)")
 
 
+def run_fuse(review_files: List[Path], score_min: int = 80) -> None:
+    """Fuse multiple review files and evaluate fused gate."""
+    from review_fusion import load_review, fuse_reviews, fused_to_yaml
+
+    reviews = []
+    for f in review_files:
+        if not f.exists():
+            print(f"ERROR: {f} not found")
+            sys.exit(1)
+        review, reviewer = load_review(f)
+        reviews.append((review, reviewer))
+        print(f"Loaded: {f.name} (reviewer={reviewer}, score={review.score}, verdict={review.verdict})")
+
+    if len(reviews) < 2:
+        print("ERROR: Need at least 2 reviews to fuse")
+        sys.exit(1)
+
+    fused = fuse_reviews(reviews, score_min=score_min)
+
+    print(f"\n=== Fused Gate ===")
+    print(f"Scores: {fused.scores}")
+    print(f"Verdicts: {fused.verdicts}")
+    print(f"Blocking findings: {len(fused.blocking_findings)}")
+    print(f"Disagreements: {len(fused.reviewer_disagreements)}")
+    print(f"Decision: {fused.final_gate_decision}")
+    print(f"Reason: {fused.fusion_reason}")
+
+    # Write fused review YAML
+    output_dir = review_files[0].parent.parent / "gate_results"
+    output_dir.mkdir(parents=True, exist_ok=True)
+    output_path = output_dir / "fused_review.yaml"
+    output_path.write_text(fused_to_yaml(fused), encoding="utf-8")
+    print(f"\nWritten: {output_path}")
+
+
 def main():
     parser = argparse.ArgumentParser(description="Token Furnace Orchestrator")
     sub = parser.add_subparsers(dest="command")
@@ -919,6 +1025,10 @@ def main():
     closeout_p = sub.add_parser("closeout", help="Generate closeout for existing run")
     closeout_p.add_argument("run_dir", type=Path)
 
+    fuse_p = sub.add_parser("fuse", help="Fuse multiple reviews into a single gate decision")
+    fuse_p.add_argument("review_files", nargs="+", type=Path, help="Review markdown files")
+    fuse_p.add_argument("--score-min", type=int, default=80)
+
     args = parser.parse_args()
 
     if args.command == "run":
@@ -929,6 +1039,8 @@ def main():
         run_validate(args.artifact_path, args.artifact_type)
     elif args.command == "closeout":
         generate_closeout(args.run_dir)
+    elif args.command == "fuse":
+        run_fuse(args.review_files, args.score_min)
     else:
         parser.print_help()
 

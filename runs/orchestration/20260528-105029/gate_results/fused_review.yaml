@@ -1,0 +1,33 @@
+fused_review:
+  scores:
+    claude_code_implementer: 78
+    gpt_cross_auditor: 76
+  verdicts:
+    claude_code_implementer: PASS_WITH_NOTES
+    gpt_cross_auditor: PASS_WITH_NOTES
+  score_range:
+    min: 76
+    max: 78
+    avg: 77.0
+  final_gate_decision: REPAIR
+  confidence: HIGH
+  blocking_findings:
+  - id: F01
+    severity: MEDIUM
+    claim: IF_RAMP is referenced as a transition target from ALIGN state but IF_RAMP
+      does not appear in the State Definitions table
+  - id: G01
+    severity: HIGH
+    claim: Claude missed or under-prioritized the need for UNIVERSAL hard-fault rules
+      from all active states. In a high-voltage inv
+  - id: G02
+    severity: MEDIUM
+    claim: 'Claude''s F01 is likely valid: if IF_RAMP is used as a transition target
+      but absent from the State Definitions table, the'
+  - id: G03
+    severity: HIGH
+    claim: Claude did not sufficiently flag the ambiguity of CONTROLLED_COAST. If
+      PWM remains active during UVLO, observer loss, or
+  total_findings: 17
+  reviewer_disagreements: []
+  fusion_reason: 4 blocking findings from merged reviews

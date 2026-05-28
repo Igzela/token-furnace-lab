@@ -1,0 +1,54 @@
+task_id: review_fusion_005
+title: "Orchestration-005: Cross-Audit Arbitration / Review Fusion"
+objective: >
+  Implement review_fusion.py that merges multiple reviewer outputs (Claude/GPT/Codex)
+  into a single fused gate decision. Validate with orchestration-004 reviews.
+
+allowed_paths:
+  - scripts/review_fusion.py
+  - scripts/tf_orchestrator.py
+  - runs/orchestration/
+  - orchestration/tasks/
+forbidden_paths:
+  - .env
+  - secrets/
+  - credentials/
+
+score_min: 80
+max_repair_rounds: 2
+run_validators: true
+worktree_isolation: false
+
+budget:
+  max_iterations: 4
+  max_tokens: 0
+  timeout_seconds: 300
+
+subproblems:
+  - id: fusion_implementation
+    title: "Implement review fusion"
+    agent: implementer
+    subagent_type: Plan
+    artifact_type: review_fusion
+    artifact_path: scripts/review_fusion.py
+    required_sections:
+      - "fuse_reviews"
+      - "merge_findings"
+      - "evaluate_fused_gate"
+    prompt: |
+      Implement review_fusion.py that merges multiple review artifacts into a single
+      fused gate decision.
+
+      Rules:
+      1. Findings union, not average.
+      2. Any reviewer HIGH/CRITICAL blocking → final gate REPAIR/ESCALATE.
+      3. Score cannot cancel blocking findings.
+      4. Reviewer disagreements recorded explicitly.
+      5. Duplicate findings merged (same claim → keep highest severity).
+      6. Unmentioned findings not auto-downgraded.
+
+      Input: multiple review markdown files with JSON blocks.
+      Output: fused_review.yaml with merged findings, gate decision, disagreements.
+
+      Validate with: runs/orchestration/20260528-105029/artifacts/claude_review.md
+                     runs/orchestration/20260528-105029/artifacts/gpt_review.md
