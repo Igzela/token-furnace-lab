@@ -117,11 +117,11 @@ python3 scripts/tf_orchestrator.py run <task.yaml> --mode <mock|queue|bridge>
 - Canonical cloud handoff branch: `main`
 - Research branch retained: `exp/hermes-perm-audit-001`
 - Active thread: `small-dc-link-foc-derivation`
-- Latest sealed run: `runs/small-dc-link-foc-phase-e-001/20260528-130000`
-- Latest run status: `PASS_WITH_NOTES` (72/100)
+- Latest sealed run: `runs/small-dc-link-foc-phase-a-004/20260528-190000`
+- Latest run status: `PASS_WITH_NOTES` (corrected v2)
 - New session entrypoint: `docs/SESSION_START_HERE.md`
 
-Phase-e-001 runtime fault recovery model is complete. 12 states, 19 fault codes, 4 fault classes. GPT caught 7 major corrections (observer freeze, CONTROLLED_COAST split, Vdc derating formula, APD topology awareness, restart logic, hard-fault paths, retry policy). All corrections applied in v2. Next recommended: Phase A-004 Fixed-Point CPU/RAM Budget.
+Phase-a-004 CPU/RAM budget complete. GPT caught critical ISR budget error (6000 cycles, not 15000). Redesigned with two-layer observer: fast ISR at 10kHz (2650 cycles, 44%), SMO at 5kHz (3500 cycles). Two HIGH risks: theta prediction accuracy and ISR profiling. Next: Phase A-005 Fixed-Point Implementation Skeleton.
 
 Coding agents must update this file, the active run status, and the relevant `knowledge/wiki/` page before committing any accepted experiment result.
 

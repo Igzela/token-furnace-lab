@@ -88,6 +88,7 @@ Active Research — 个人研究项目，迭代中，无外部用户。
   - derivation-005: joint simulation (GPT final PASS_WITH_NOTES 86/100 — corrected model conditionally accepted; 300W requires high nominal bus and high APD decoupling)
   - phase-a-001: FOC baseline design (COMPLETE)
   - phase-e-001: runtime fault recovery model (72/100 PASS_WITH_NOTES — 12 states, 19 fault codes, GPT caught 7 major corrections)
+  - phase-a-004: fixed-point CPU/RAM budget (PASS_WITH_NOTES — corrected ISR to 6000 cycles, two-layer observer, fast ISR 44% utilization)
   - 详细进度见 `knowledge/wiki/small-dc-link-foc-technical-route.md`
 - `mcp-bridge-boundary-audit` — MCP 桥接边界审计
 - `orchestration-001~004` — 多 agent 编排系列
@@ -112,6 +113,7 @@ Active Research — 个人研究项目，迭代中，无外部用户。
 - **GPT communication**: via Chrome DevTools MCP (`fill` + `press_key Enter`, not `type_text`)
 - **GPT role**: Cross-verification of derivations; GPT caught 3 critical formula/numerical errors and identified derivation-005 APD/model bugs
 - **derivation-005 final review**: corrected electrical-power balance and APD sanity checks passed GPT final verification with notes; next recommended experiment is APD branch current / inductor / switching-device sizing
+- **Two-layer observer**: SMO at 5kHz (separate task), angle prediction at 10kHz (in ISR). GPT caught ISR budget error (6000 cycles, not 15000). Fast ISR 44% utilization, well under 70% target.
 
 ### Key Decisions (Orchestration series)
 
