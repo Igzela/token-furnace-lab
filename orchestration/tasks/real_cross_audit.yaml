@@ -1,0 +1,97 @@
+task_id: real_cross_audit_004
+title: "Orchestration-004: Real Multi-Model Cross-Audit"
+objective: >
+  Run a real multi-model cross-audit on the Phase E-001 fault recovery model.
+  Claude Code as implementer, GPT as architecture reviewer.
+  Validate all outputs against schemas. Verify gate handles real model output drift.
+
+allowed_paths:
+  - runs/orchestration-004/
+  - runs/small-dc-link-foc-phase-e-001/
+  - knowledge/wiki/
+forbidden_paths:
+  - .env
+  - secrets/
+  - credentials/
+
+score_min: 70
+max_repair_rounds: 2
+run_validators: true
+worktree_isolation: false
+
+budget:
+  max_iterations: 6
+  max_tokens: 0
+  timeout_seconds: 600
+
+subproblems:
+  - id: claude_implementation
+    title: "Claude Code: Review fault recovery model"
+    agent: implementer
+    subagent_type: Plan
+    artifact_type: review
+    artifact_path: artifacts/claude_review.md
+    review_path: reviews/gpt_review_of_claude.md
+    required_sections:
+      - "Score"
+      - "Verdict"
+      - "Confidence"
+      - "Findings"
+      - "Final Recommendation"
+    prompt: |
+      You are reviewing the Phase E-001 runtime fault recovery model for a
+      sensorless FOC water pump drive (22uF DC-link, TMS320F28035).
+
+      Read the model at: runs/small-dc-link-foc-phase-e-001/20260528-130000/model_outputs/fault_recovery_model.md
+
+      Produce a structured review with:
+      - Score (0-100)
+      - Verdict (PASS, PASS_WITH_NOTES, or FAIL)
+      - Confidence (HIGH, MEDIUM, LOW)
+      - Findings (each with: id, severity, blocking, evidence_path, claim, correction)
+      - Final Recommendation
+
+      Focus on:
+      1. Are all critical fault paths covered?
+      2. Are timing constants physically reasonable?
+      3. Is the restart logic correct?
+      4. Are there safety gaps?
+
+      Include evidence paths for all claims.
+
+  - id: gpt_review_of_claude
+    title: "GPT: Cross-review Claude's artifact"
+    agent: reviewer
+    artifact_type: review
+    artifact_path: artifacts/gpt_review.md
+    required_sections:
+      - "Score"
+      - "Verdict"
+      - "Confidence"
+      - "Findings"
+      - "Final Recommendation"
+    prompt: |
+      You are reviewing a cross-audit review artifact produced by Claude Code.
+
+      Claude reviewed the Phase E-001 runtime fault recovery model for a
+      sensorless FOC water pump drive (22uF DC-link, TMS320F28035).
+
+      Claude's review is at: runs/orchestration/20260528-105029/artifacts/claude_review.md
+
+      Your job: review Claude's review for completeness, correctness, and missed issues.
+
+      Produce a structured review with:
+      - Score (0-100) for Claude's review quality
+      - Verdict (PASS, PASS_WITH_NOTES, or FAIL)
+      - Confidence (HIGH, MEDIUM, LOW)
+      - Findings (each with: id, severity, blocking, evidence_path, claim, correction)
+      - Final Recommendation (ACCEPT, REPAIR, ESCALATE, REJECT)
+
+      Focus on:
+      1. Did Claude miss any critical fault paths?
+      2. Are Claude's findings correctly prioritized?
+      3. Are timing constants physically reasonable?
+      4. Are there safety gaps Claude overlooked?
+      5. Is the blocking finding (F01: IF_RAMP missing) valid?
+
+      Include evidence paths for all claims.

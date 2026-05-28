@@ -55,10 +55,12 @@ def extract_json_block_by_type(text: str, block_type: str) -> Optional[Dict[str,
 
 def load_schema(schema_name: str) -> Dict[str, Any]:
     """Load a JSON schema from the contracts directory."""
-    schema_path = SCHEMA_DIR / f"{schema_name}.json"
-    if not schema_path.exists():
-        raise FileNotFoundError(f"Schema not found: {schema_path}")
-    return json.loads(schema_path.read_text(encoding="utf-8"))
+    # Try both naming conventions: name.json and name.schema.json
+    for suffix in [".json", ".schema.json"]:
+        schema_path = SCHEMA_DIR / f"{schema_name}{suffix}"
+        if schema_path.exists():
+            return json.loads(schema_path.read_text(encoding="utf-8"))
+    raise FileNotFoundError(f"Schema not found: {SCHEMA_DIR}/{schema_name}*.json")
 
 
 def validate_against_schema(data: Dict[str, Any], schema: Dict[str, Any]) -> List[str]:

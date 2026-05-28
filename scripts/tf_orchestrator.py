@@ -384,7 +384,37 @@ def dispatch_review(mode: str, task: Dict, sub: Dict, artifact_path: Path, run_d
 # --- Review parsing ---
 
 def parse_review(text: str) -> Review:
-    # Handle both "Score: 82" and "## Score\n**82 / 100**" formats
+    # Try JSON block first (structured output from agents)
+    json_blocks = []
+    for match in re.finditer(r"```json\s*\n(.*?)```", text, re.DOTALL):
+        try:
+            json_blocks.append(json.loads(match.group(1).strip()))
+        except json.JSONDecodeError:
+            continue
+
+    if json_blocks:
+        data = json_blocks[0]
+        score = data.get("score", 0)
+        verdict = data.get("verdict", "FAIL")
+        confidence = data.get("confidence", "LOW")
+        final_rec = data.get("final_recommendation")
+
+        findings = []
+        for f in data.get("findings", []):
+            findings.append(Finding(
+                id=f.get("id", "?"),
+                severity=f.get("severity", "MEDIUM"),
+                blocking=f.get("blocking", False),
+                status=f.get("status", "open"),
+                evidence_path=f.get("evidence_path"),
+                claim=f.get("claim", ""),
+                correction=f.get("correction", "None"),
+            ))
+
+        return Review(score=score, verdict=verdict, confidence=confidence,
+                      findings=findings, final_recommendation=final_rec)
+
+    # Markdown fallback
     score_match = re.search(r"Score\s*[:*]*\s*\*{0,2}(\d{1,3})", text)
     verdict_match = re.search(r"Verdict\s*[:*]*\s*\*{0,2}(PASS_WITH_NOTES|PASS|FAIL)", text)
     conf_match = re.search(r"Confidence\s*[:*]*\s*\*{0,2}(HIGH|MEDIUM|LOW)", text)
