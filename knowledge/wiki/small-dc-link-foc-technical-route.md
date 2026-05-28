@@ -102,6 +102,7 @@ Technical roadmap for 22µF DC-link + sensorless FOC + water pump + TMS320F28035
 | derivation-003 | FOC voltage envelope | COMPLETE | 82/100 | ψ_f≤0.103, 300W needs ≥6632rpm, high-line 240W limit |
 | derivation-004 | APD sizing | COMPLETE | 78/100 | 16µF/500V H-bridge, 90% decoupling enables 300W |
 | derivation-005 | joint simulation | COMPLETE | 86/100 | GPT final: PASS_WITH_NOTES. 300W conditionally feasible (44% pass). Recommended baseline: 22µF+22µF/500V APD, robust=200W, stretch=300W |
+| derivation-006 | APD HW sizing | COMPLETE | 84/100 | 650V MOSFET sufficient (Case A), 1.5-6.8mH inductor, 3-6W total APD loss |
 | phase-a-001 | FOC design | COMPLETE | - | F28035 budget OK, modules defined |
 | phase-a-002 | FOC interface | COMPLETE | 86/100 | GPT PASS_WITH_NOTES. v3: theta mux, IqLimiter, split omega scaling, applied voltage SMO |
 | phase-a-003 | FOC hw test | PENDING | - | Next: validate on 1360µF hardware |
@@ -121,3 +122,4 @@ Technical roadmap for 22µF DC-link + sensorless FOC + water pump + TMS320F28035
 - E5: phase-a-001 — FOC baseline design (COMPLETE)
 - E5b: derivation-005 — Joint simulation (86/100 PASS_WITH_NOTES, COMPLETE)
 - E5b-final: GPT final verification — PASS_WITH_NOTES, 300W conditionally feasible, recommended baseline 22µF+22µF/500V APD
+- E6: derivation-006 — APD hardware sizing (84/100 PASS_WITH_NOTES, COMPLETE): 650V MOSFET (Case A unipolar), 1.56mH inductor, 3.65W loss, 160 configs swept

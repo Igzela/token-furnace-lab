@@ -1,0 +1,22 @@
+run_id: small-dc-link-foc-derivation-006
+timestamp: "20260528-030000"
+status: COMPLETE
+topic: APD H-bridge hardware sizing
+branch: exp/hermes-perm-audit-001
+verdicts:
+  experiment_verdict: PASS_WITH_NOTES
+  model_verdict: PASS_WITH_NOTES
+  reason: >
+    APD hardware realizable with standard components. 650V MOSFET sufficient
+    under Case A (unipolar switching). 160 configs swept, 100 passed (62.5%).
+    Best: L=1.56mH, fsw=40kHz, 650V MOSFET, 3.65W loss (1.22%).
+    GPT notes: confirm Case A from actual schematic, prefer 22uF over 16uF.
+deliverables:
+  - task.md
+  - model_outputs/claude-code-derivation.md
+  - model_outputs/apd_sizing_model.py
+  - model_outputs/sizing_results.md
+  - model_outputs/sizing_raw.json
+  - model_outputs/synthesis.md
+  - synthesis/synthesis.md
+next_step: Phase B (I-f startup + smooth FOC transition) or Phase A-003 (hardware validation on 1360uF baseline)
