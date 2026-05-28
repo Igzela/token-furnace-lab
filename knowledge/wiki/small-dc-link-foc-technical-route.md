@@ -106,7 +106,7 @@ Technical roadmap for 22µF DC-link + sensorless FOC + water pump + TMS320F28035
 | derivation-006 | APD HW sizing | COMPLETE | 84/100 | 650V MOSFET sufficient (Case A), 1.5-6.8mH inductor, 3-6W total APD loss |
 | phase-a-001 | FOC design | COMPLETE | - | F28035 budget OK, modules defined |
 | phase-a-002 | FOC interface | COMPLETE | 86/100 | GPT PASS_WITH_NOTES. v3: theta mux, IqLimiter, split omega scaling, applied voltage SMO |
-| phase-a-003 | FOC hw test | PENDING | - | Next: validate on 1360µF hardware |
+| phase-a-003 | FOC hw test plan | COMPLETE | 88/100 | GPT PASS_WITH_NOTES. 7 milestones, fixed-point test mandatory, safety interlocks, conservative limits. Plan ready for hardware execution |
 | phase-b-001 | I-f startup | COMPLETE | 76/100 | GPT PASS_WITH_NOTES. 168/216 pass. Observer model weak, ke/ψf unresolved, blend needs gating |
 | phase-b-002 | I-f startup corrected | COMPLETE | 82/100 | GPT PASS_WITH_NOTES. All B-001 corrections applied. 252/252 pass. ψ_f=0.08Wb, expanded observer, observer-gated blend |
 | phase-b-003 | Three-threshold blend | COMPLETE | 90/100 | GPT PASS. Three-threshold blend + anti-chatter. 189/189 pass (100%), max blend error 5°, implementation-ready |
@@ -138,3 +138,4 @@ Technical roadmap for 22µF DC-link + sensorless FOC + water pump + TMS320F28035
 - E11: phase-c-001 — DC-link ripple management (82/100 PASS_WITH_NOTES, COMPLETE): 22µF+90% APD not robust across medium-load, 48/192 pass. GPT: don't conclude three-phase required yet, explore adaptive APD and capacitance threshold
 - E12: phase-c-002 — Single-phase vs three-phase comparison (88/100 PASS_WITH_NOTES, COMPLETE): DC-link feasibility closed. 269/288 pass. Three-phase 22µF works without APD, single-phase needs 90% APD
 - E13: phase-c-003 — Margin characterization (86/100 PASS_WITH_NOTES, COMPLETE): 2880 configs, 95.2% pass. 22µF+90% APD robust worst-case tolerances. Design confidence established
+- E14: phase-a-003 — FOC hardware test plan (88/100 PASS_WITH_NOTES, COMPLETE): 7 milestones, mandatory fixed-point test, safety interlocks. Plan ready for hardware execution

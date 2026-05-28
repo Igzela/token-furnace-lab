@@ -1,0 +1,21 @@
+experiment: phase-a-003
+timestamp: "20260528-120000"
+branch: exp/hermes-perm-audit-001
+status: complete
+score: 88
+verdict: PASS_WITH_NOTES
+parent_experiment: phase-c-003
+gpt_final_score: 88
+gpt_verdict: PASS_WITH_NOTES
+key_findings:
+  - 7 milestones: fixed-point → ADC → open-loop → current-loop → SVPWM → observer → handover
+  - Mandatory A-003.0: fixed-point scaling dry test before any motor power
+  - Safety interlocks: emergency stop, trip-zone, OC, duty clamp
+  - Conservative limits: OC=2A, Iq_max=0.5A initially
+  - Phase D entry gate defined
+artifacts:
+  - model_outputs/test_procedure.md
+  - model_outputs/gpt-review.md
+  - model_outputs/synthesis.md
+  - synthesis/synthesis.md
+next_step: execute_a003_on_hardware
