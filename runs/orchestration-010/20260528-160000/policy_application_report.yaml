@@ -1,0 +1,205 @@
+generated_at: '2026-05-28'
+patches:
+- change:
+    add:
+    - Cross-audit by different model class catches safety gaps single reviewer misses.
+  change_type: add_strictness_rule
+  patch_id: POLPATCH-001
+  risk: low
+  rollback:
+    remove:
+    - Cross-audit by different model class catches safety gaps single reviewer misses.
+  source_suggestion: PS-001
+  status: pending
+  target:
+    file: configs/orchestrator_policy.yaml
+    section: decision_policy.strictness_rules
+  validation_required:
+  - failure_injection
+  - calibration
+- change:
+    add:
+    - Route timeout/transition semantics to dedicated classifier before accepting.
+  change_type: add_classifier
+  patch_id: POLPATCH-002
+  risk: medium
+  rollback:
+    remove:
+    - Route timeout/transition semantics to dedicated classifier before accepting.
+  source_suggestion: PS-002
+  status: pending
+  target:
+    file: configs/orchestrator_policy.yaml
+    section: decision_policy.strictness_rules
+  validation_required:
+  - failure_injection
+  - calibration
+- change:
+    add:
+    - Any gate policy change must be validated with failure injection before activation.
+  change_type: add_strictness_rule
+  patch_id: POLPATCH-003
+  risk: low
+  rollback:
+    remove:
+    - Any gate policy change must be validated with failure injection before activation.
+  source_suggestion: PS-003
+  status: pending
+  target:
+    file: configs/orchestrator_policy.yaml
+    section: decision_policy.strictness_rules
+  validation_required:
+  - failure_injection
+  - calibration
+- change:
+    add:
+    - Repeated LOW findings without blocking are informational, not REPAIR triggers.
+  change_type: add_strictness_rule
+  patch_id: POLPATCH-004
+  risk: medium
+  rollback:
+    remove:
+    - Repeated LOW findings without blocking are informational, not REPAIR triggers.
+  source_suggestion: PS-004
+  status: pending
+  target:
+    file: configs/orchestrator_policy.yaml
+    section: decision_policy.strictness_rules
+  validation_required:
+  - failure_injection
+  - calibration
+- change:
+    add:
+    - After any dangling-state repair, run cascade target scan on same sequence.
+  change_type: add_strictness_rule
+  patch_id: POLPATCH-005
+  risk: low
+  rollback:
+    remove:
+    - After any dangling-state repair, run cascade target scan on same sequence.
+  source_suggestion: PS-005
+  status: pending
+  target:
+    file: configs/orchestrator_policy.yaml
+    section: decision_policy.strictness_rules
+  validation_required:
+  - failure_injection
+  - calibration
+- change:
+    add:
+    - "Review fusion must use findings union \u2014 score cannot cancel blocking findings."
+  change_type: add_strictness_rule
+  patch_id: POLPATCH-006
+  risk: medium
+  rollback:
+    remove:
+    - "Review fusion must use findings union \u2014 score cannot cancel blocking findings."
+  source_suggestion: PS-006
+  status: pending
+  target:
+    file: configs/orchestrator_policy.yaml
+    section: decision_policy.strictness_rules
+  validation_required:
+  - failure_injection
+  - calibration
+- change:
+    add:
+    - Parallel dispatch with max_parallel=3 is safe for independent subproblems.
+  change_type: add_strictness_rule
+  patch_id: POLPATCH-007
+  risk: low
+  rollback:
+    remove:
+    - Parallel dispatch with max_parallel=3 is safe for independent subproblems.
+  source_suggestion: PS-007
+  status: pending
+  target:
+    file: configs/orchestrator_policy.yaml
+    section: decision_policy.strictness_rules
+  validation_required:
+  - failure_injection
+  - calibration
+- change:
+    add:
+    - "Default timeout classifier to REVIEW for ambiguous patterns \u2014 fail-safe\
+      \ not fail-open."
+  change_type: add_strictness_rule
+  patch_id: POLPATCH-008
+  risk: medium
+  rollback:
+    remove:
+    - "Default timeout classifier to REVIEW for ambiguous patterns \u2014 fail-safe\
+      \ not fail-open."
+  source_suggestion: PS-008
+  status: pending
+  target:
+    file: configs/orchestrator_policy.yaml
+    section: decision_policy.strictness_rules
+  validation_required:
+  - failure_injection
+  - calibration
+policy_effectiveness:
+- lesson_occurrences: 1
+  name: validator_fail_overrides_review_score
+  policy_id: POL-001
+  status: active
+- lesson_occurrences: 2
+  name: blocking_findings_union_wins
+  policy_id: POL-002
+  status: active
+- lesson_occurrences: 0
+  name: unsafe_timeout_transition_requires_repair
+  policy_id: POL-003
+  status: active
+- lesson_occurrences: 1
+  name: cascade_scan_after_repair
+  policy_id: POL-004
+  status: active
+- lesson_occurrences: 3
+  name: cross_audit_for_safety_critical
+  policy_id: POL-005
+  status: active
+- lesson_occurrences: 0
+  name: confidence_multi_source_synthesis
+  policy_id: POL-006
+  status: active
+- lesson_occurrences: 2
+  name: failure_injection_regression_required
+  policy_id: POL-007
+  status: active
+- lesson_occurrences: 1
+  name: parallel_dispatch_requires_isolation
+  policy_id: POL-008
+  status: active
+- lesson_occurrences: 0
+  name: repeated_low_findings_informational
+  policy_id: POL-009
+  status: active
+- lesson_occurrences: 0
+  name: self_tightening_allowed
+  policy_id: POL-010
+  status: active
+regression_results:
+  calibration_cases: true
+  confidence_pipeline: true
+  config_valid: true
+  core_imports: true
+repeat_failures:
+- action: escalate_policy_review
+  lesson: "multiple reviewers\u53D1\u73B0 different safety gaps \u2014 cross-audit\
+    \ adds real value"
+  occurrences: 2
+  policy_id: POL-005
+  policy_name: cross_audit_for_safety_critical
+  runs:
+  - 20260528-105029
+  - orchestration-004
+  status: ineffective_or_not_enforced
+run_id: orchestration-010
+summary:
+  applied: 0
+  regression_pass: true
+  rejected: 0
+  repeat_failures_detected: 1
+  repeat_failures_ineffective: 1
+  total_patches: 8

@@ -1,0 +1,19 @@
+change:
+  add:
+  - "Default timeout classifier to REVIEW for ambiguous patterns \u2014 fail-safe\
+    \ not fail-open."
+change_type: add_strictness_rule
+patch_id: POLPATCH-008
+risk: medium
+rollback:
+  remove:
+  - "Default timeout classifier to REVIEW for ambiguous patterns \u2014 fail-safe\
+    \ not fail-open."
+source_suggestion: PS-008
+status: pending
+target:
+  file: configs/orchestrator_policy.yaml
+  section: decision_policy.strictness_rules
+validation_required:
+- failure_injection
+- calibration

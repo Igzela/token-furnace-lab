@@ -1,0 +1,55 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "PolicyPatch",
+  "description": "A config-driven policy change applied by the policy engine",
+  "type": "object",
+  "required": ["patch_id", "source_suggestion", "risk", "change_type", "target", "change"],
+  "properties": {
+    "patch_id": {
+      "type": "string",
+      "pattern": "^POLPATCH-\\d{3}$"
+    },
+    "source_suggestion": {
+      "type": "string",
+      "pattern": "^PS-\\d{3}$"
+    },
+    "risk": {
+      "type": "string",
+      "enum": ["low", "medium", "high"]
+    },
+    "change_type": {
+      "type": "string",
+      "enum": ["tighten_gate", "add_validator", "add_classifier", "add_strictness_rule", "add_evidence_requirement"]
+    },
+    "target": {
+      "type": "object",
+      "required": ["file", "section"],
+      "properties": {
+        "file": { "type": "string" },
+        "section": { "type": "string" }
+      }
+    },
+    "change": {
+      "type": "object",
+      "properties": {
+        "add": { "type": "array", "items": { "type": "string" } },
+        "remove": { "type": "array", "items": { "type": "string" } },
+        "set": {
+          "type": "object",
+          "additionalProperties": true
+        }
+      }
+    },
+    "validation_required": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "rollback": {
+      "type": "object",
+      "properties": {
+        "remove": { "type": "array", "items": { "type": "string" } },
+        "restore": { "type": "string" }
+      }
+    }
+  }
+}

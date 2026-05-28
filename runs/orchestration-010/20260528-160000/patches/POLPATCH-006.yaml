@@ -1,0 +1,17 @@
+change:
+  add:
+  - "Review fusion must use findings union \u2014 score cannot cancel blocking findings."
+change_type: add_strictness_rule
+patch_id: POLPATCH-006
+risk: medium
+rollback:
+  remove:
+  - "Review fusion must use findings union \u2014 score cannot cancel blocking findings."
+source_suggestion: PS-006
+status: pending
+target:
+  file: configs/orchestrator_policy.yaml
+  section: decision_policy.strictness_rules
+validation_required:
+- failure_injection
+- calibration

@@ -1,0 +1,100 @@
+# Orchestrator Policy Configuration
+# This file is the config-driven layer that the orchestrator reads.
+# policy_engine.py edits this file — NOT core orchestrator code.
+
+version: "1.0"
+last_updated: "2026-05-28"
+
+decision_policy:
+  score_min: 80
+  max_repair_rounds: 2
+
+  # Gate priority (checked in order — first match wins)
+  priority_rules:
+    - id: PR-001
+      name: validator_fail_overrides_score
+      condition: "validator_errors present"
+      verdict: REPAIR
+      source: orchestration-003
+
+    - id: PR-002
+      name: blocking_findings_require_repair
+      condition: "blocking_findings > 0 AND repair_budget_remaining"
+      verdict: REPAIR
+      source: orchestration-005
+
+    - id: PR-003
+      name: blocking_findings_escalate_when_exhausted
+      condition: "blocking_findings > 0 AND repair_budget_exhausted"
+      verdict: ESCALATE
+      source: orchestration-005
+
+    - id: PR-004
+      name: safety_critical_low_confidence_escalate
+      condition: "high_severity_findings AND confidence_LOW"
+      verdict: ESCALATE
+      source: orchestration-008
+
+    - id: PR-005
+      name: all_clear_accept
+      condition: "no_blocking AND validators_pass AND confidence >= MEDIUM"
+      verdict: ACCEPT
+      source: orchestration-008
+
+  # Strictness additions (auto-applied by policy engine)
+  strictness_rules:
+    - id: SR-001
+      name: timeout_classifier_required
+      description: "Route timeout/transition findings through classifier before accepting"
+      enabled: true
+      source: orchestration-008
+      applied_by: policy_engine
+
+    - id: SR-002
+      name: cascade_scan_after_repair
+      description: "After dangling-state repair, scan same sequence for related defects"
+      enabled: true
+      source: orchestration-006
+      applied_by: policy_engine
+
+    - id: SR-003
+      name: cross_audit_for_safety_critical
+      description: "Safety-critical artifacts require cross-audit by different model class"
+      enabled: true
+      source: orchestration-004
+      applied_by: policy_engine
+
+    - id: SR-004
+      name: repeated_low_informational_only
+      description: "Repeated LOW findings without blocking are informational, not REPAIR triggers"
+      enabled: true
+      source: orchestration-008
+      applied_by: policy_engine
+
+    - id: SR-005
+      name: failure_injection_on_policy_change
+      description: "Any gate policy change must pass failure injection regression"
+      enabled: true
+      source: orchestration-003
+      applied_by: policy_engine
+
+  # Blocked changes (never auto-applied)
+  blocked_changes:
+    - lower_score_threshold
+    - ignore_validator_failure
+    - reduce_repair_rounds
+    - enable_auto_merge
+    - weaken_escalation
+    - broaden_allowed_paths
+
+confidence_scoring:
+  weights:
+    reviewer_confidence: 0.20
+    evidence_quality: 0.25
+    validator_agreement: 0.25
+    cross_reviewer_convergence: 0.15
+    repair_history: 0.15
+  thresholds:
+    HIGH: 80
+    MEDIUM: 60
+    LOW: 0

@@ -1,0 +1,17 @@
+change:
+  add:
+  - Route timeout/transition semantics to dedicated classifier before accepting.
+change_type: add_classifier
+patch_id: POLPATCH-002
+risk: medium
+rollback:
+  remove:
+  - Route timeout/transition semantics to dedicated classifier before accepting.
+source_suggestion: PS-002
+status: pending
+target:
+  file: configs/orchestrator_policy.yaml
+  section: decision_policy.strictness_rules
+validation_required:
+- failure_injection
+- calibration

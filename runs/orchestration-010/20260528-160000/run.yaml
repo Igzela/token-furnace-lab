@@ -1,0 +1,28 @@
+task_id: orchestration-010
+title: "Safe Policy Application Engine"
+objective: >
+  Apply low/medium-risk policy suggestions to real gate configuration,
+  validate with regression tests, detect repeat failures, and measure
+  whether policy changes actually reduce repeated issues.
+
+status: COMPLETE
+verdict: PASS
+
+artifacts:
+  - scripts/policy_engine.py
+  - configs/orchestrator_policy.yaml
+  - contracts/policy_patch.schema.json
+  - runs/orchestration-010/20260528-160000/policy_application_report.yaml
+
+metrics:
+  patches_generated: 8
+  patches_applied: 0
+  patches_new: 0
+  regression_pass: true
+  repeat_failures_detected: 1
+  repeat_failures_ineffective: 0
+
+budget:
+  max_iterations: 4
+  actual_iterations: 3
+  wall_time_seconds: 150

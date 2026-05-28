@@ -1,0 +1,17 @@
+change:
+  add:
+  - After any dangling-state repair, run cascade target scan on same sequence.
+change_type: add_strictness_rule
+patch_id: POLPATCH-005
+risk: low
+rollback:
+  remove:
+  - After any dangling-state repair, run cascade target scan on same sequence.
+source_suggestion: PS-005
+status: pending
+target:
+  file: configs/orchestrator_policy.yaml
+  section: decision_policy.strictness_rules
+validation_required:
+- failure_injection
+- calibration
