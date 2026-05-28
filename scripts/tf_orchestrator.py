@@ -319,6 +319,15 @@ def dispatch_agent(mode: str, task: Dict, sub: Dict, run_dir: Path, timeout: int
         artifact_path.write_text(f"# Mock: {sub.get('title', sub['id'])}\n\nNo real agent called.\n", encoding="utf-8")
         return artifact_path
 
+    if mode == "bridge":
+        bridge_script = REPO_ROOT / "scripts" / "tf_agent_bridge.sh"
+        cmd = [str(bridge_script), str(prompt_path), str(artifact_path),
+               "--timeout", str(timeout), "--subagent-type", sub.get("subagent_type", "Plan")]
+        result = subprocess.run(cmd, timeout=timeout + 30, text=True, capture_output=True)
+        if result.returncode != 0:
+            raise RuntimeError(f"Agent bridge failed: {result.stderr}")
+        return artifact_path
+
     if mode == "command":
         cmd = os.environ.get("TF_AGENT_CMD")
         if not cmd:
@@ -349,6 +358,15 @@ def dispatch_review(mode: str, task: Dict, sub: Dict, artifact_path: Path, run_d
             f"## Final Recommendation\n\nACCEPT\n",
             encoding="utf-8",
         )
+        return review_path
+
+    if mode == "bridge":
+        bridge_script = REPO_ROOT / "scripts" / "tf_agent_bridge.sh"
+        cmd = [str(bridge_script), str(prompt_path), str(review_path),
+               "--timeout", str(timeout)]
+        result = subprocess.run(cmd, timeout=timeout + 30, text=True, capture_output=True)
+        if result.returncode != 0:
+            raise RuntimeError(f"Review bridge failed: {result.stderr}")
         return review_path
 
     if mode == "command":
@@ -800,7 +818,7 @@ def main():
 
     run_p = sub.add_parser("run", help="Run orchestration")
     run_p.add_argument("task_yaml", type=Path, help="Path to task YAML")
-    run_p.add_argument("--mode", choices=["queue", "mock", "command"], default="mock")
+    run_p.add_argument("--mode", choices=["queue", "mock", "command", "bridge"], default="mock")
     run_p.add_argument("--timeout", type=int, default=300)
 
     gate_p = sub.add_parser("gate", help="Evaluate gate for existing run")
