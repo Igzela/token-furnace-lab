@@ -1,0 +1,17 @@
+fused_review:
+  scores:
+    claude_code_architect: 92
+    gpt_cross_auditor: 90
+  verdicts:
+    claude_code_architect: PASS_WITH_NOTES
+    gpt_cross_auditor: PASS_WITH_NOTES
+  score_range:
+    min: 90
+    max: 92
+    avg: 91.0
+  final_gate_decision: ACCEPT
+  confidence: HIGH
+  blocking_findings: []
+  total_findings: 11
+  reviewer_disagreements: []
+  fusion_reason: All reviewers PASS, no blocking findings

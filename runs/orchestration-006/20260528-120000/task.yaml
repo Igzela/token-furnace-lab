@@ -1,0 +1,15 @@
+task_id: fused_repair_006
+title: "Orchestration-006: Fused Review Repair Execution Benchmark"
+objective: >
+  Apply the 4 blocking findings from orchestration-004/005 fusion to repair
+  the fault recovery model, then re-review + re-fuse to verify the closed-loop works.
+
+repairs_applied:
+  - F01/G02: Added IF_RAMP to State Definitions table with exit transitions
+  - G01: Universal hard-fault rules already present in v2 (Claude under-prioritized in review)
+  - G03: CONTROLLED_DECEL/PASSIVE_COAST already split in v2 (GPT reviewed older version)
+  - F07: Replaced Chinese characters in precharge timeout rationale
+  - F04: Added Vdc recovery hysteresis lower threshold (260V)
+
+score_min: 80
+max_repair_rounds: 2
