@@ -1,0 +1,75 @@
+# Routing Policy Configuration
+# Defines strategy templates and routing rules for the adaptive router.
+
+version: "1.0"
+
+strategies:
+  simple_review:
+    use_when:
+      - low_risk
+      - no_code_write
+      - artifact_review_only
+    agents: [claude_or_gpt_reviewer]
+    gate:
+      score_min: 75
+      fusion_required: false
+
+  cross_audit_review:
+    use_when:
+      - safety_sensitive
+      - architecture_or_fault_model
+      - prior_reviewer_miss_risk
+    agents: [claude_reviewer, gpt_reviewer]
+    gate:
+      score_min: 80
+      fusion_required: true
+      finding_union: true
+
+  closed_loop_repair:
+    use_when:
+      - blocking_findings_present
+      - repairable_artifact
+    agents: [claude_implementer, gpt_reviewer]
+    gate:
+      max_repair_rounds: 2
+      re_review_required: true
+
+  parallel_artifact_audit:
+    use_when:
+      - independent_subproblems
+      - no_shared_write_target
+    agents: [multiple_plan_agents]
+    execution:
+      worktree: true
+      parallel: true
+    merge:
+      artifact_only: true
+
+  implementation_with_validators:
+    use_when:
+      - code_or_validator_change
+      - repo_write_required
+    execution:
+      worktree: true
+    gate:
+      tests_required: true
+      scope_diff_required: true
+      schema_required: true
+
+  policy_application:
+    use_when:
+      - task_type: policy_update
+    gate:
+      auto_tighten_allowed: true
+      auto_loosen_blocked: true
+      regression_required: true
+
+  derivation_with_cross_audit:
+    use_when:
+      - task_type: derivation
+      - domain: control_system
+    agents: [claude_implementer, gpt_reviewer]
+    gate:
+      score_min: 82
+      fusion_required: true
+      max_repair_rounds: 2

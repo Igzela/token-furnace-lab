@@ -1,0 +1,29 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "TaskProfile",
+  "description": "Machine-readable task features for adaptive routing",
+  "type": "object",
+  "required": ["task_type", "domain", "risk_level", "artifact_type", "expected_output"],
+  "properties": {
+    "task_type": { "type": "string", "enum": ["review", "repair", "implementation", "derivation", "validation", "synthesis", "benchmark", "policy_update"] },
+    "domain": { "type": "string", "enum": ["control_system", "orchestrator", "documentation", "code", "safety", "hardware_model"] },
+    "risk_level": { "type": "string", "enum": ["low", "medium", "high", "safety_critical"] },
+    "artifact_type": { "type": "string", "enum": ["markdown", "json", "yaml", "python", "c_code", "matrix", "test_report"] },
+    "expected_output": { "type": "string", "enum": ["review", "patch", "report", "validator", "synthesis", "final_verdict"] },
+    "requires_repo_write": { "type": "boolean" },
+    "requires_code_execution": { "type": "boolean" },
+    "requires_external_review": { "type": "boolean" },
+    "requires_parallelism": { "type": "boolean" },
+    "safety_sensitive": { "type": "boolean" },
+    "has_known_pattern": { "type": "boolean" },
+    "complexity": {
+      "type": "object",
+      "properties": {
+        "subproblem_count": { "type": "integer" },
+        "dependency_depth": { "type": "integer" },
+        "expected_iterations": { "type": "integer" }
+      }
+    },
+    "keywords": { "type": "array", "items": { "type": "string" } }
+  }
+}

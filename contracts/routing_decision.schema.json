@@ -1,0 +1,28 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "RoutingDecision",
+  "description": "Output of the adaptive router: strategy, agents, gate policy, rationale",
+  "type": "object",
+  "required": ["strategy", "agents", "validators", "execution", "gate_policy", "rationale"],
+  "properties": {
+    "strategy": { "type": "string" },
+    "agents": { "type": "array", "items": { "type": "string" } },
+    "validators": { "type": "array", "items": { "type": "string" } },
+    "execution": {
+      "type": "object",
+      "properties": {
+        "mode": { "type": "string" },
+        "worktree": { "type": "boolean" },
+        "parallel": { "type": "boolean" }
+      }
+    },
+    "gate_policy": { "type": "object" },
+    "escalation": {
+      "type": "object",
+      "properties": { "trigger": { "type": "array", "items": { "type": "string" } } }
+    },
+    "rationale": { "type": "array", "items": { "type": "string" } },
+    "similar_runs": { "type": "array" },
+    "confidence": { "type": "number", "minimum": 0, "maximum": 1 }
+  }
+}

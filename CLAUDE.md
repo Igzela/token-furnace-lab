@@ -100,6 +100,7 @@ Active Research — 个人研究项目，迭代中，无外部用户。
   - orchestration-008: confidence & escalation calibration (COMPLETE/PASS — 9/9 calibration cases, 3/3 pipeline tests, 5-component confidence scoring, decision policy, timeout classifier)
   - orchestration-009: outcome memory + policy tuning loop (COMPLETE/PASS — 10 runs ingested, 13 lessons, 8 policy suggestions, 10 active policies, self-modification gate)
   - orchestration-010: safe policy application engine (COMPLETE/PASS — policy patches, config layer, regression tests 4/4, repeat failure detection, policy effectiveness measurement)
+  - orchestration-011: adaptive task routing (COMPLETE/PASS — 3-layer router: task_profiler + memory_matcher + routing_decision, 8 task types, 7 strategies, routing outcome tracking)
 
 ### Key Decisions (FOC derivation series)
 

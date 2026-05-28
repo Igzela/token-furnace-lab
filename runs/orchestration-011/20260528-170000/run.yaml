@@ -1,0 +1,28 @@
+task_id: orchestration-011
+title: "Adaptive Task Routing"
+objective: >
+  Three-layer router: Task Profiler extracts features, Memory Matcher finds
+  similar past runs, Routing Decision selects strategy with rationale.
+  Rule-based + memory retrieval, not black-box.
+
+status: COMPLETE
+verdict: PASS
+
+artifacts:
+  - scripts/task_profiler.py
+  - scripts/adaptive_router.py
+  - scripts/routing_outcome_update.py
+  - configs/routing_policy.yaml
+  - contracts/task_profile.schema.json
+  - contracts/routing_decision.schema.json
+
+metrics:
+  task_types_supported: 8
+  routing_strategies: 7
+  test_routes_correct: 3
+  routing_outcomes_recorded: 3
+
+budget:
+  max_iterations: 4
+  actual_iterations: 3
+  wall_time_seconds: 120

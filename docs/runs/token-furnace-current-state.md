@@ -22,7 +22,8 @@
 | Phase 10 | Multi-worktree parallel dispatch | orchestration-007 | COMPLETE/PASS | 4a2b85e |
 | Phase 11 | Confidence & escalation calibration | orchestration-008 | COMPLETE/PASS | 92cb116 |
 | Phase 12 | Outcome memory + policy tuning loop | orchestration-009 | COMPLETE/PASS | 180e938 |
-| Phase 13 | Safe policy application engine | orchestration-010 | COMPLETE/PASS | pending |
+| Phase 13 | Safe policy application engine | orchestration-010 | COMPLETE/PASS | 9312000 |
+| Phase 14 | Adaptive task routing | orchestration-011 | COMPLETE/PASS | pending |
 
 ## Platform Consolidation
 

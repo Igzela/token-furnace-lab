@@ -1,0 +1,41 @@
+agents:
+- claude_reviewer
+- gpt_reviewer
+confidence: 0.58
+escalation:
+  trigger:
+  - safety_critical_ambiguity
+  - validator_conflict
+execution:
+  mode: bridge
+  parallel: false
+  worktree: false
+gate_policy:
+  finding_union: true
+  fusion_required: true
+  score_min: 80
+rationale:
+- safety_sensitive=True, risk=safety_critical → cross_audit_review
+similar_runs:
+- result: PASS_WITH_NOTES
+  run_id: 20260528-105029
+  similarity: 0.2
+  task_type: cross_audit
+  useful_pattern: cross_audit_value
+  warning: ''
+- result: PASS_WITH_NOTES
+  run_id: orchestration-004
+  similarity: 0.2
+  task_type: cross_audit
+  useful_pattern: cross_audit_value
+  warning: ''
+- result: PASS
+  run_id: orchestration-005
+  similarity: 0.2
+  task_type: review_fusion
+  useful_pattern: unknown
+  warning: ''
+strategy: cross_audit_review
+validators:
+- schema
+- evidence_path
