@@ -108,7 +108,7 @@ Active Research — 个人研究项目，迭代中，无外部用户。
   - orchestration-014: adversarial review module (COMPLETE — devil's advocate + defense + three-way fusion, mock verified)
   - orchestration-015: expanded real benchmark (COMPLETE/PASS — 4 cases: SE-006/009/010/011; route accuracy 100%, 0 false accepts, adaptive +14.2 vs baseline)
   - merged-001: merged harness (COMPLETE/PASS — event store + budget + quality gates from token-efficient + real LLM from furnace; mock 4/4, real 4/4, avg 0.88)
-  - merged-001-prod: merged harness production upgrade (COMPLETE/PASS_WITH_NOTES — S1-S4 security, G1-G5 production, V1-V4 validation, adversarial + judge; mock 4/4 PASS; GPT re-review: PASS_WITH_NOTES, binary PASS for single-process scope; BLOCK on first review fixed: fusion downgrade rule, EventStore pending-size check, budget coverage for judge+adversarial; accepted limitations: symlink TOCTOU, multi-process, billing-grade accuracy)
+  - merged-001-prod: merged harness production upgrade (COMPLETE/PASS_WITH_NOTES — S1-S4 security, G1-G5 production, V1-V4 validation, adversarial + judge; mock 4/4 PASS; GPT re-review: PASS_WITH_NOTES, binary PASS for single-process scope; BLOCK on first review fixed: fusion downgrade rule, EventStore pending-size check, budget coverage for judge+adversarial; accepted limitations: symlink TOCTOU, multi-process, billing-grade accuracy; hardening pass: 27 pytest tests, subdir validation, budget provenance source field, unknown YAML key rejection, idempotency fix, retry budget coverage)
 
 ### Key Decisions (FOC derivation series)
 

@@ -10,7 +10,6 @@ Usage:
 """
 
 import argparse
-import hashlib
 import json
 import logging
 import re
@@ -42,6 +41,7 @@ ALLOWED_EVENT_TYPES = frozenset({
 })
 
 TASK_REQUIRED_FIELDS = frozenset({"task_id", "objective", "subproblems"})
+TASK_ALLOWED_FIELDS = TASK_REQUIRED_FIELDS | {"task_id", "mode", "budget_tier", "timeout"}
 SAFE_ID_RE = re.compile(r"^[a-zA-Z0-9_\-]+$")
 
 
@@ -51,6 +51,8 @@ def safe_artifact_path(run_dir: Path, subproblem_id: str, subdir: str = "artifac
     """Construct a path within run_dir, rejecting traversal attempts."""
     if not SAFE_ID_RE.match(subproblem_id):
         raise ValueError(f"Rejected subproblem ID (invalid chars): {subproblem_id!r}")
+    if not SAFE_ID_RE.match(subdir):
+        raise ValueError(f"Rejected subdir (invalid chars): {subdir!r}")
     resolved = (run_dir / subdir / f"{subproblem_id}_artifact.md").resolve()
     if not resolved.is_relative_to(run_dir.resolve()):
         raise ValueError(f"Path escapes run_dir: {resolved}")
@@ -135,13 +137,13 @@ class EventStore:
                 )
 
             if event.event_id in self._ids:
+                if event.idempotency_key and self._idempotency.get(event.idempotency_key) == event.event_id:
+                    return  # idempotent no-op
                 raise ValueError(f"Duplicate event_id: {event.event_id}")
             if event.idempotency_key:
                 existing = self._idempotency.get(event.idempotency_key)
-                if existing and existing != event.event_id:
+                if existing:
                     raise ValueError(f"Idempotency conflict: {event.idempotency_key}")
-                if existing == event.event_id:
-                    return  # silent no-op
 
             self.path.parent.mkdir(parents=True, exist_ok=True)
             with open(self.path, "a", encoding="utf-8") as f:
@@ -216,13 +218,15 @@ class BudgetManager:
         ))
         return r
 
-    def record_usage(self, reservation: BudgetReservation, tokens: int) -> None:
+    def record_usage(self, reservation: BudgetReservation, tokens: int,
+                     source: str = "unknown") -> None:
         reservation.used_tokens += tokens
         self.store.append(Event(
             event_id=f"evt-{uuid.uuid4().hex[:12]}",
             event_type="budget_used",
             timestamp=datetime.now(timezone.utc).isoformat(),
-            payload={"reservation_id": reservation.reservation_id, "tokens": tokens, "remaining": reservation.remaining},
+            payload={"reservation_id": reservation.reservation_id, "tokens": tokens,
+                     "remaining": reservation.remaining, "source": source},
             parent_event_id=reservation.reservation_id,
         ))
 
@@ -417,7 +421,7 @@ def fuse_verdicts(gate_verdict: str, adversarial: AdversarialReview,
     """Deterministic fusion: adversarial overrule blocks, sustain passes.
 
     Overrule downgrades PASS (>= 0.80) to pass_with_notes.
-    High-confidence overrule (>= 0.8) can also downgrade pass_with_notes
+    High-confidence overrule (>= 0.9) can also downgrade pass_with_notes
     to fail_retryable, addressing GPT finding that pass_with_notes should
     not be immune to blocking adversarial risk.
     """
@@ -491,10 +495,14 @@ def llm_judge_score(artifact_content: str, task_objective: str,
 # --- Task Validation (V1) ---
 
 def validate_task_yaml(task: Dict, source: str = "task") -> None:
-    """Validate task YAML has required fields (V1)."""
+    """Validate task YAML has required fields and no unknown top-level keys (V1)."""
     missing = TASK_REQUIRED_FIELDS - set(task.keys())
     if missing:
         raise ValueError(f"Task YAML missing required fields: {missing} (in {source})")
+
+    unknown = set(task.keys()) - TASK_ALLOWED_FIELDS
+    if unknown:
+        raise ValueError(f"Task YAML has unknown fields: {unknown} (in {source})")
 
     if not isinstance(task.get("task_id"), str) or not task["task_id"]:
         raise ValueError(f"Task 'task_id' must be a non-empty string (in {source})")
@@ -627,7 +635,8 @@ class MergedHarness:
         llm_score = llm_judge_score(all_content, task.get("objective", ""), self.mode)
         if self.mode != "mock":
             judge_tokens = 0 if llm_score is None else 800  # estimate
-            self.budget.record_usage(reservation, judge_tokens)
+            judge_source = "llm" if llm_score is not None else "keyword_fallback"
+            self.budget.record_usage(reservation, judge_tokens, source=judge_source)
 
         gate_result = self.gate.evaluate(all_content, routing, reservation, llm_score=llm_score)
         self._event("gate_evaluated", {
@@ -641,7 +650,7 @@ class MergedHarness:
             adv_review = self.devils_advocate.review(all_content, task.get("objective", ""))
             adversarial = asdict(adv_review)
             # G2: record adversarial review budget (local analysis, ~200 tokens equivalent)
-            self.budget.record_usage(reservation, 200)
+            self.budget.record_usage(reservation, 200, source="devils_advocate")
             self._event("adversarial_review", {
                 "verdict": adv_review.verdict,
                 "challenges": len(adv_review.challenges),
@@ -667,6 +676,10 @@ class MergedHarness:
                     all_content += p.read_text(encoding="utf-8") + "\n"
 
             llm_score = llm_judge_score(all_content, task.get("objective", ""), self.mode)
+            if self.mode != "mock":
+                judge_tokens = 0 if llm_score is None else 800
+                judge_source = "llm" if llm_score is not None else "keyword_fallback"
+                self.budget.record_usage(reservation, judge_tokens, source=f"retry_{judge_source}")
             gate_result = self.gate.evaluate(all_content, routing, reservation, retry_count, llm_score=llm_score)
             self._event("gate_revaluated", {"verdict": gate_result.verdict, "score": gate_result.score, "retry": retry_count})
 
@@ -674,6 +687,7 @@ class MergedHarness:
             if artifacts:
                 adv_review = self.devils_advocate.review(all_content, task.get("objective", ""))
                 adversarial = asdict(adv_review)
+                self.budget.record_usage(reservation, 200, source="retry_devils_advocate")
                 self._event("adversarial_review", {"verdict": adv_review.verdict, "challenges": len(adv_review.challenges)})
                 fused_verdict, score_adj = fuse_verdicts(gate_result.verdict, adv_review, gate_result.score)
                 gate_result.verdict = fused_verdict
@@ -752,7 +766,7 @@ class MergedHarness:
 
             # G2: real budget tracking — record actual usage against real reservation
             tokens_est = len(prompt.split()) * 2 + 500
-            self.budget.record_usage(reservation, tokens_est)
+            self.budget.record_usage(reservation, tokens_est, source="bridge_execution")
 
             if result.success:
                 artifacts.append(str(artifact_path.relative_to(self.run_dir)))

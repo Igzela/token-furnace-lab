@@ -94,3 +94,25 @@ First review: BLOCK (3 HIGH findings). All resolved:
 
 Final: **PASS_WITH_NOTES** (binary PASS for single-process scope)
 Accepted limitations: symlink TOCTOU, multi-process, billing-grade budget accuracy
+
+## Trust Boundary (documented per GPT recommendation)
+
+**Scope**: Single-process local research tool. Not a multi-user production service.
+
+**Assumptions**:
+- Single process writes to EventStore (thread-safe via Lock, not file-lock)
+- Same user operates all components (no hostile local users)
+- `run_dir` is created by the harness itself, not externally supplied
+- Budget token counts are estimates, not billing-grade
+
+**NOT in scope**:
+- Multi-process concurrent EventStore writers
+- Symlink TOCTOU race protection (check-then-write window exists)
+- Hostile local users crafting symlink attacks
+- Precise token billing for LLM judge/adversarial calls
+
+**If upgrading to production**:
+- Add `openat`/`nofollow`/atomic write policy for artifact paths
+- Add file-lock or single-writer model for EventStore
+- Add explicit symlink rejection before write
+- Add billing-grade token counting from API responses
