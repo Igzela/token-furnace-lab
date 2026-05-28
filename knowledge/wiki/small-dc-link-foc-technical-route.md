@@ -114,6 +114,7 @@ Technical roadmap for 22µF DC-link + sensorless FOC + water pump + TMS320F28035
 | phase-c-001 | DC-link ripple mgmt | COMPLETE | 82/100 | GPT PASS_WITH_NOTES. 22µF+90% APD not robust across medium-load. 48/192 pass (25%). Don't conclude three-phase required yet |
 | phase-c-002 | 1ph vs 3ph comparison | COMPLETE | 88/100 | GPT PASS_WITH_NOTES. DC-link feasibility closed. 269/288 pass (93.4%). Three-phase 22µF no APD, single-phase needs 90% APD |
 | phase-c-003 | Margin characterization | COMPLETE | 86/100 | PASS_WITH_NOTES. 2880 configs, 95.2% pass. 22µF+90% APD robust worst-case. Min safe Cdc: 22µF@90%, 33µF@85%, 47µF@80% |
+| phase-e-001 | Fault recovery model | COMPLETE | 72/100 | PASS_WITH_NOTES. 10 states, 19 fault codes, 4 fault classes. GPT: observer freeze→extrapolated bridge, coast→passive+controlled, topology-aware APD derate |
 
 ## References
 
@@ -139,3 +140,4 @@ Technical roadmap for 22µF DC-link + sensorless FOC + water pump + TMS320F28035
 - E12: phase-c-002 — Single-phase vs three-phase comparison (88/100 PASS_WITH_NOTES, COMPLETE): DC-link feasibility closed. 269/288 pass. Three-phase 22µF works without APD, single-phase needs 90% APD
 - E13: phase-c-003 — Margin characterization (86/100 PASS_WITH_NOTES, COMPLETE): 2880 configs, 95.2% pass. 22µF+90% APD robust worst-case tolerances. Design confidence established
 - E14: phase-a-003 — FOC hardware test plan (88/100 PASS_WITH_NOTES, COMPLETE): 7 milestones, mandatory fixed-point test, safety interlocks. Plan ready for hardware execution
+- E15: phase-e-001 — Runtime fault recovery model (72/100 PASS_WITH_NOTES, COMPLETE): 10 states, 19 fault codes, 4 fault classes. GPT corrected: observer freeze→extrapolated bridge, coast split, topology-aware APD, restart through startup sequence
