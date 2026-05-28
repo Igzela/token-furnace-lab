@@ -1,0 +1,20 @@
+experiment: phase-c-003
+timestamp: "20260528-110000"
+branch: exp/hermes-perm-audit-001
+status: complete
+score: 86
+verdict: PASS_WITH_NOTES
+parent_experiment: phase-c-002
+key_findings:
+  - 2880 configs swept, 2743 pass (95.2%)
+  - 22µF + 90% APD: 100% pass even worst-case (-20% Cdc, low-line)
+  - Min safe Cdc at 90% APD: 22µF (exactly nominal)
+  - Min safe Cdc at 85% APD: 33µF
+  - Min safe Cdc at 80% APD: 47µF
+  - Hardware risk: APD performance degradation is main concern
+artifacts:
+  - model_outputs/margin_sweep.py
+  - model_outputs/sweep_results.md
+  - model_outputs/synthesis.md
+  - synthesis/synthesis.md
+next_step: close_dc_link_feasibility
