@@ -111,6 +111,7 @@ Technical roadmap for 22µF DC-link + sensorless FOC + water pump + TMS320F28035
 | phase-b-003 | Three-threshold blend | COMPLETE | 90/100 | GPT PASS. Three-threshold blend + anti-chatter. 189/189 pass (100%), max blend error 5°, implementation-ready |
 | phase-b-004 | State machine impl spec | COMPLETE | 78/100 | GPT PASS_WITH_NOTES. 7 states, gated transitions, 2KB trace, angle_t, 15 faults, retry escalation. Corrected trace RAM and angle type |
 | phase-c-001 | DC-link ripple mgmt | COMPLETE | 82/100 | GPT PASS_WITH_NOTES. 22µF+90% APD not robust across medium-load. 48/192 pass (25%). Don't conclude three-phase required yet |
+| phase-c-002 | 1ph vs 3ph comparison | COMPLETE | 88/100 | GPT PASS_WITH_NOTES. DC-link feasibility closed. 269/288 pass (93.4%). Three-phase 22µF no APD, single-phase needs 90% APD |
 
 ## References
 
@@ -133,3 +134,4 @@ Technical roadmap for 22µF DC-link + sensorless FOC + water pump + TMS320F28035
 - E9: phase-b-003 — Three-threshold blend + anti-chatter (90/100 PASS, COMPLETE): 189/189 pass, max blend error 5°, implementation-ready state machine with logging and fallback profiles
 - E10: phase-b-004 — State machine implementation spec (78/100 PASS_WITH_NOTES, COMPLETE): C header+impl, 2KB trace, angle_t, 15 faults, retry escalation. GPT corrected trace RAM (56KB→2KB) and angle type
 - E11: phase-c-001 — DC-link ripple management (82/100 PASS_WITH_NOTES, COMPLETE): 22µF+90% APD not robust across medium-load, 48/192 pass. GPT: don't conclude three-phase required yet, explore adaptive APD and capacitance threshold
+- E12: phase-c-002 — Single-phase vs three-phase comparison (88/100 PASS_WITH_NOTES, COMPLETE): DC-link feasibility closed. 269/288 pass. Three-phase 22µF works without APD, single-phase needs 90% APD

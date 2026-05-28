@@ -1,0 +1,22 @@
+experiment: phase-c-002
+timestamp: "20260528-100000"
+branch: exp/hermes-perm-audit-001
+status: complete
+score: 88
+verdict: PASS_WITH_NOTES
+parent_experiment: phase-c-001
+gpt_final_score: 88
+gpt_verdict: PASS_WITH_NOTES
+key_findings:
+  - DC-link feasibility established at model level
+  - Three-phase 22µF: feasible without APD (100% pass)
+  - Single-phase 22µF + 90% APD: feasible (100% pass)
+  - Single-phase 22µF no APD: not robust (31% pass)
+  - C-001/C-002 reversal explained by corrected model
+artifacts:
+  - model_outputs/ripple_comparison.py
+  - model_outputs/sweep_results.md
+  - model_outputs/gpt-review.md
+  - model_outputs/synthesis.md
+  - synthesis/synthesis.md
+next_step: optional_c003_margin_characterization
