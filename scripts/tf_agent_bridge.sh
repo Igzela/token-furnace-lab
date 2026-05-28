@@ -9,6 +9,7 @@
 #   --model <model>      Override model (default: inherit from Claude Code config)
 #   --timeout <seconds>  Timeout for claude CLI (default: 300)
 #   --subagent-type <type>  Subagent type (default: Plan)
+#   --write-mode         Enable write tools (Write, Edit, mkdir, cp) in addition to read-only
 #   --dry-run            Print the command without executing
 #
 # Environment:
@@ -24,6 +25,7 @@ shift 2
 # Parse options
 TIMEOUT=300
 DRY_RUN=false
+WRITE_MODE=false
 EXTRA_ARGS=()
 
 while [[ $# -gt 0 ]]; do
@@ -31,6 +33,7 @@ while [[ $# -gt 0 ]]; do
         --model) EXTRA_ARGS+=("--model" "$2"); shift 2 ;;
         --timeout) TIMEOUT="$2"; shift 2 ;;
         --subagent-type) EXTRA_ARGS+=("--agent" "$2"); shift 2 ;;
+        --write-mode) WRITE_MODE=true; shift ;;
         --dry-run) DRY_RUN=true; shift ;;
         *) EXTRA_ARGS+=("$1"); shift ;;
     esac
@@ -51,8 +54,12 @@ if [[ -n "${CLAUDE_MODEL:-}" ]]; then
     CMD+=("--model" "$CLAUDE_MODEL")
 fi
 
-# Add allowed tools (read-only by default for safety)
-CMD+=("--allowedTools" "Read" "Grep" "Glob" "Bash(git *)")
+# Add allowed tools (read-only by default, write-mode adds write tools)
+if $WRITE_MODE; then
+    CMD+=("--allowedTools" "Read" "Write" "Edit" "Grep" "Glob" "Bash(git *)" "Bash(mkdir *)" "Bash(cp *)")
+else
+    CMD+=("--allowedTools" "Read" "Grep" "Glob" "Bash(git *)")
+fi
 
 if $DRY_RUN; then
     echo "DRY RUN: ${CMD[*]}" >&2

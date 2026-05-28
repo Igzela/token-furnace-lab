@@ -304,7 +304,7 @@ score_min: {task.get("score_min", 80)}
 
 # --- Adapter: dispatch agents ---
 
-def dispatch_agent(mode: str, task: Dict, sub: Dict, run_dir: Path, timeout: int) -> Path:
+def dispatch_agent(mode: str, task: Dict, sub: Dict, run_dir: Path, timeout: int, write_mode: bool = False) -> Path:
     artifact_path = run_dir / sub["artifact_path"]
     prompt = make_agent_prompt(task, sub, run_dir)
     prompt_path = run_dir / "prompts" / f"{sub['id']}_agent_prompt.md"
@@ -320,12 +320,19 @@ def dispatch_agent(mode: str, task: Dict, sub: Dict, run_dir: Path, timeout: int
         return artifact_path
 
     if mode == "bridge":
-        bridge_script = REPO_ROOT / "scripts" / "tf_agent_bridge.sh"
-        cmd = [str(bridge_script), str(prompt_path), str(artifact_path),
-               "--timeout", str(timeout), "--subagent-type", sub.get("subagent_type", "Plan")]
-        result = subprocess.run(cmd, timeout=timeout + 30, text=True, capture_output=True)
-        if result.returncode != 0:
-            raise RuntimeError(f"Agent bridge failed: {result.stderr}")
+        from tf_agent_executor import AgentExecutor, AgentTask
+        executor = AgentExecutor()
+        agent_task = AgentTask(
+            subproblem_id=sub["id"],
+            prompt_path=str(prompt_path),
+            artifact_path=str(artifact_path),
+            write_mode=write_mode,
+            timeout=timeout,
+            subagent_type=sub.get("subagent_type", "Plan"),
+        )
+        result = executor.execute_one(agent_task)
+        if not result.success:
+            raise RuntimeError(f"Agent bridge failed: {result.error}")
         return artifact_path
 
     if mode == "command":
@@ -340,7 +347,7 @@ def dispatch_agent(mode: str, task: Dict, sub: Dict, run_dir: Path, timeout: int
     raise ValueError(f"unknown mode: {mode}")
 
 
-def dispatch_review(mode: str, task: Dict, sub: Dict, artifact_path: Path, run_dir: Path, timeout: int) -> Path:
+def dispatch_review(mode: str, task: Dict, sub: Dict, artifact_path: Path, run_dir: Path, timeout: int, write_mode: bool = False) -> Path:
     review_path = run_dir / sub["review_path"]
     prompt = make_review_prompt(task, sub, artifact_path)
     prompt_path = run_dir / "prompts" / f"{sub['id']}_review_prompt.md"
@@ -361,12 +368,18 @@ def dispatch_review(mode: str, task: Dict, sub: Dict, artifact_path: Path, run_d
         return review_path
 
     if mode == "bridge":
-        bridge_script = REPO_ROOT / "scripts" / "tf_agent_bridge.sh"
-        cmd = [str(bridge_script), str(prompt_path), str(review_path),
-               "--timeout", str(timeout)]
-        result = subprocess.run(cmd, timeout=timeout + 30, text=True, capture_output=True)
-        if result.returncode != 0:
-            raise RuntimeError(f"Review bridge failed: {result.stderr}")
+        from tf_agent_executor import AgentExecutor, AgentTask
+        executor = AgentExecutor()
+        review_task = AgentTask(
+            subproblem_id=f"{sub['id']}_review",
+            prompt_path=str(prompt_path),
+            artifact_path=str(review_path),
+            write_mode=write_mode,
+            timeout=timeout,
+        )
+        result = executor.execute_one(review_task)
+        if not result.success:
+            raise RuntimeError(f"Review bridge failed: {result.error}")
         return review_path
 
     if mode == "command":
@@ -666,7 +679,7 @@ def quarantine_worktree(wt_path: Optional[Path], run_dir: Path, subproblem_id: s
 
 # --- Main orchestration loop ---
 
-def run_orchestrate(task_path: Path, mode: str, timeout: int) -> None:
+def run_orchestrate(task_path: Path, mode: str, timeout: int, write_mode: bool = False) -> None:
     task = load_yaml(task_path)
     run_id = now_id()
     run_dir = REPO_ROOT / "runs" / "orchestration" / run_id
@@ -712,7 +725,7 @@ def run_orchestrate(task_path: Path, mode: str, timeout: int) -> None:
 
         try:
             # Dispatch agent
-            artifact_path = dispatch_agent(mode, task, sub, effective_run_dir, timeout)
+            artifact_path = dispatch_agent(mode, task, sub, effective_run_dir, timeout, write_mode=write_mode)
             print(f"  Artifact: {artifact_path}")
             append_event(run_dir, {"event": "agent_dispatched", "subproblem": sub["id"]})
 
@@ -727,7 +740,7 @@ def run_orchestrate(task_path: Path, mode: str, timeout: int) -> None:
                 continue
 
             # Dispatch review
-            review_path = dispatch_review(mode, task, sub, artifact_path, effective_run_dir, timeout)
+            review_path = dispatch_review(mode, task, sub, artifact_path, effective_run_dir, timeout, write_mode=write_mode)
             print(f"  Review: {review_path}")
             append_event(run_dir, {"event": "review_dispatched", "subproblem": sub["id"]})
 
@@ -805,8 +818,44 @@ def run_orchestrate(task_path: Path, mode: str, timeout: int) -> None:
     # Generate closeout
     generate_closeout(run_dir)
 
+    # Post-run learning: record outcome and extract lessons
+    post_run_learning(run_dir, task, budget)
+
     print(f"Done. {budget.iterations} iterations, {budget.wall_seconds:.1f}s wall time.")
     print(f"Budget ledger: {run_dir / 'budget_ledger.yaml'}")
+
+
+def post_run_learning(run_dir: Path, task: Dict, budget: 'BudgetLedger') -> None:
+    """Record outcome to memory and extract lessons after run completes."""
+    try:
+        gate_dir = run_dir / "gate_results"
+        if not gate_dir.exists():
+            return
+
+        gate_results = []
+        for gf in sorted(gate_dir.glob("*.yaml")):
+            gate_results.append(load_yaml(gf))
+
+        statuses = [gr.get("status", "") for gr in gate_results]
+        overall = "ACCEPT" if all(s == "ACCEPT" for s in statuses) else "REPAIR" if any(s == "REPAIR" for s in statuses) else "UNKNOWN"
+
+        outcome = {
+            "run_id": run_dir.name,
+            "task_id": task.get("task_id", "unknown"),
+            "task_type": task.get("subproblems", [{}])[0].get("task_type", "review") if task.get("subproblems") else "review",
+            "gate_status": overall,
+            "repair_rounds": budget.iterations - 1,
+            "wall_seconds": budget.wall_seconds,
+        }
+
+        outcome_file = REPO_ROOT / "knowledge" / "orchestrator" / "outcome_memory.jsonl"
+        outcome_file.parent.mkdir(parents=True, exist_ok=True)
+        with open(outcome_file, "a", encoding="utf-8") as f:
+            f.write(json.dumps(outcome) + "\n")
+
+        append_event(run_dir, {"event": "post_run_learning", "outcome_recorded": True})
+    except Exception as e:
+        append_event(run_dir, {"event": "post_run_learning_error", "error": str(e)})
 
 
 def generate_closeout(run_dir: Path) -> None:
@@ -1075,6 +1124,8 @@ def main():
     run_p.add_argument("task_yaml", type=Path, help="Path to task YAML")
     run_p.add_argument("--mode", choices=["queue", "mock", "command", "bridge"], default="mock")
     run_p.add_argument("--timeout", type=int, default=300)
+    run_p.add_argument("--write-mode", action="store_true", help="Enable write tools in bridge mode")
+    run_p.add_argument("--adaptive", action="store_true", help="Use adaptive routing pipeline")
 
     gate_p = sub.add_parser("gate", help="Evaluate gate for existing run")
     gate_p.add_argument("run_dir", type=Path)
@@ -1100,7 +1151,12 @@ def main():
     args = parser.parse_args()
 
     if args.command == "run":
-        run_orchestrate(args.task_yaml, args.mode, args.timeout)
+        if args.adaptive:
+            from adaptive_pipeline import AdaptivePipeline
+            pipeline = AdaptivePipeline(mode=args.mode, write_mode=args.write_mode, timeout=args.timeout)
+            pipeline.run(args.task_yaml)
+        else:
+            run_orchestrate(args.task_yaml, args.mode, args.timeout, write_mode=args.write_mode)
     elif args.command == "gate":
         run_gate(args.run_dir, args.round_num)
     elif args.command == "validate":

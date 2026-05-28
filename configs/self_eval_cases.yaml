@@ -62,6 +62,7 @@ cases:
     expected_strategy: simple_review
     source_run: null
     seen: true
+    small_task: true
 
   # --- Heldout cases (new variants) ---
   - id: SE-007

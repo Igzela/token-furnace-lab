@@ -350,6 +350,10 @@ def main():
         report = generate_report(results)
         print(json.dumps(asdict(report), indent=2))
 
+    elif action == "real":
+        from real_self_eval import main as real_main
+        real_main()
+
     else:
         print(f"Unknown action: {action}")
         sys.exit(1)
