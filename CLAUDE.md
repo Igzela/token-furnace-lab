@@ -106,7 +106,7 @@ Active Research — 个人研究项目，迭代中，无外部用户。
   - orchestration-012: self-evaluation benchmark (COMPLETE/PASS — 8 cases, adaptive vs baseline: +13.2 score, -83% missed blocking, 88% route accuracy, 0 false accepts)
   - orchestration-013: real execution + adaptive full pipeline (COMPLETE/PASS — verified end-to-end: routing → real LLM execution → gate → learning; 4 pipeline bugs fixed; mock + real benchmark both pass)
   - orchestration-014: adversarial review module (COMPLETE — devil's advocate + defense + three-way fusion, mock verified)
-  - orchestration-015: expanded real benchmark (COMPLETE/PASS — 4 cases: SE-006/009/010/011; route accuracy 100%, 0 false accepts, adaptive avg 77-88 vs baseline 80-83)
+  - orchestration-015: expanded real benchmark (COMPLETE/PASS — 4 cases: SE-006/009/010/011; route accuracy 100%, 0 false accepts, adaptive +14.2 vs baseline)
 
 ### Key Decisions (FOC derivation series)
 
@@ -130,6 +130,7 @@ Active Research — 个人研究项目，迭代中，无外部用户。
 - **Adaptive learning**: outcome_memory.jsonl stores machine-readable run history; orchestrator_learn.py extracts lessons and generates policy suggestions; system can auto-tighten but never auto-loosen without human approval
 - **Adversarial review**: three-way fusion (original + devil's advocate + defense) with blocking-override rule; any blocking finding from any reviewer triggers REPAIR; validated in mock mode, real LLM execution pending
 - **Real benchmark variance**: LLM non-determinism causes ±5 point score swings between runs; route accuracy (100%) and false accept rate (0) are stable metrics; absolute score comparison needs ≥10 cases for statistical significance
+- **L6 PASS**: adaptive avg 82.8 vs baseline 68.5 (+14.2), route accuracy 100%, 0 false accepts, adversarial review caught 2 HIGH blocking findings with real LLM
 
 ## 自主推进协议
 
