@@ -107,6 +107,7 @@ Active Research — 个人研究项目，迭代中，无外部用户。
   - orchestration-013: real execution + adaptive full pipeline (COMPLETE/PASS — verified end-to-end: routing → real LLM execution → gate → learning; 4 pipeline bugs fixed; mock + real benchmark both pass)
   - orchestration-014: adversarial review module (COMPLETE — devil's advocate + defense + three-way fusion, mock verified)
   - orchestration-015: expanded real benchmark (COMPLETE/PASS — 4 cases: SE-006/009/010/011; route accuracy 100%, 0 false accepts, adaptive +14.2 vs baseline)
+  - merged-001: merged harness (COMPLETE/PASS — event store + budget + quality gates from token-efficient + real LLM from furnace; mock 4/4, real 4/4, avg 0.88)
 
 ### Key Decisions (FOC derivation series)
 
