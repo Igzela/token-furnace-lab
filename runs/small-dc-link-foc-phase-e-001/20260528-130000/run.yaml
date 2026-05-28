@@ -1,0 +1,22 @@
+experiment: phase-e-001
+timestamp: "20260528-130000"
+branch: exp/hermes-perm-audit-001
+status: complete
+score: 72
+verdict: PASS_WITH_NOTES
+parent_experiment: phase-a-003
+gpt_final_score: 72
+gpt_verdict: PASS_WITH_NOTES
+key_findings:
+  - 10 states, 19 fault codes, 4 fault classes
+  - Observer freeze replaced with extrapolated-theta bridge (10-20ms max)
+  - CONTROLLED_COAST split into PASSIVE_COAST + CONTROLLED_DECEL
+  - APD derating topology-dependent: 3ph continue, 1ph ripple-limited
+  - Restart through cold-start sequence, not OPEN_LOOP_RECOVERY
+  - Missing hard-fault paths added: vdc_ov, gate_driver, watchdog, ADC, OC
+  - Retry classes: hard_fault_no_retry, recoverable_retry_3, degraded_operation, manual
+artifacts:
+  - model_outputs/task.md
+  - model_outputs/fault_recovery_model.md
+  - model_outputs/gpt-review.md
+next_step: phase_a_004_fixed_point_cpu_budget
