@@ -124,10 +124,13 @@ class EventStore:
             # G3: schema validation
             event.validate()
 
-            # S2: size limit
-            if self.path.exists() and self.path.stat().st_size >= self.max_bytes:
+            # S2: size limit — include pending event bytes
+            serialized = json.dumps(event.to_dict(), ensure_ascii=False)
+            current = self.path.stat().st_size if self.path.exists() else 0
+            if current + len(serialized.encode("utf-8")) + 1 > self.max_bytes:
                 raise RuntimeError(
-                    f"Event store exceeds {self.max_bytes} bytes — "
+                    f"Event store would exceed {self.max_bytes} bytes "
+                    f"({current} + ~{len(serialized.encode('utf-8'))} pending) — "
                     f"possible runaway loop"
                 )
 
@@ -413,12 +416,17 @@ def fuse_verdicts(gate_verdict: str, adversarial: AdversarialReview,
                   gate_score: float = 0.0) -> Tuple[str, float]:
     """Deterministic fusion: adversarial overrule blocks, sustain passes.
 
-    Adversarial downgrade only applies when gate scored pass (>= 0.80).
-    For pass_with_notes (0.60-0.80), adversarial findings are advisory only.
+    Overrule downgrades PASS (>= 0.80) to pass_with_notes.
+    High-confidence overrule (>= 0.8) can also downgrade pass_with_notes
+    to fail_retryable, addressing GPT finding that pass_with_notes should
+    not be immune to blocking adversarial risk.
     """
     if adversarial.verdict == "overrule":
         if gate_verdict == "pass" and gate_score >= 0.80:
             return "pass_with_notes", 0.0
+        if (gate_verdict == "pass_with_notes"
+                and adversarial.confidence >= 0.9):
+            return "fail_retryable", 0.0
         return gate_verdict, 0.0
     if adversarial.verdict == "partial":
         if gate_verdict == "pass" and gate_score >= 0.80:
@@ -615,8 +623,11 @@ class MergedHarness:
             if p.exists():
                 all_content += p.read_text(encoding="utf-8") + "\n"
 
-        # G1: LLM judge
+        # G1: LLM judge — record budget even on fallback (G2)
         llm_score = llm_judge_score(all_content, task.get("objective", ""), self.mode)
+        if self.mode != "mock":
+            judge_tokens = 0 if llm_score is None else 800  # estimate
+            self.budget.record_usage(reservation, judge_tokens)
 
         gate_result = self.gate.evaluate(all_content, routing, reservation, llm_score=llm_score)
         self._event("gate_evaluated", {
@@ -629,6 +640,8 @@ class MergedHarness:
         if artifacts and gate_result.verdict != "fail_terminal":
             adv_review = self.devils_advocate.review(all_content, task.get("objective", ""))
             adversarial = asdict(adv_review)
+            # G2: record adversarial review budget (local analysis, ~200 tokens equivalent)
+            self.budget.record_usage(reservation, 200)
             self._event("adversarial_review", {
                 "verdict": adv_review.verdict,
                 "challenges": len(adv_review.challenges),

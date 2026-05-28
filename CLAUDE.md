@@ -108,7 +108,7 @@ Active Research — 个人研究项目，迭代中，无外部用户。
   - orchestration-014: adversarial review module (COMPLETE — devil's advocate + defense + three-way fusion, mock verified)
   - orchestration-015: expanded real benchmark (COMPLETE/PASS — 4 cases: SE-006/009/010/011; route accuracy 100%, 0 false accepts, adaptive +14.2 vs baseline)
   - merged-001: merged harness (COMPLETE/PASS — event store + budget + quality gates from token-efficient + real LLM from furnace; mock 4/4, real 4/4, avg 0.88)
-  - merged-001-prod: merged harness production upgrade (COMPLETE/PASS — S1-S4 security hardening, G1-G5 production gaps, V1-V4 validation, adversarial review + LLM judge; mock 4/4 PASS, path traversal rejected, event store schema+size+thread-safe; GPT gate + cross-review verified)
+  - merged-001-prod: merged harness production upgrade (COMPLETE/PASS_WITH_NOTES — S1-S4 security, G1-G5 production, V1-V4 validation, adversarial + judge; mock 4/4 PASS; GPT re-review: PASS_WITH_NOTES, binary PASS for single-process scope; BLOCK on first review fixed: fusion downgrade rule, EventStore pending-size check, budget coverage for judge+adversarial; accepted limitations: symlink TOCTOU, multi-process, billing-grade accuracy)
 
 ### Key Decisions (FOC derivation series)
 
@@ -137,11 +137,11 @@ Active Research — 个人研究项目，迭代中，无外部用户。
 ### Key Decisions (Merged Harness Production)
 
 - **Run identity**: `merged-{time_ns}-{uuid8}` format with `mkdir(exist_ok=False)` prevents collision
-- **Path traversal**: regex allowlist `^[a-zA-Z0-9_\-]+$` on subproblem IDs, covers null-byte injection
-- **Adversarial fusion**: downgrade only when gate score >= 0.80 (pass), advisory only for pass_with_notes — prevents adversarial from blocking legitimate marginal passes
-- **Event store ownership**: EventStore does not mkdir; `run()` creates directory, EventStore.append() creates on first write
-- **LLM judge**: budgeted (60s timeout), graceful fallback to keyword scoring on failure
-- **GPT gate verdict**: BLOCK with 2 HIGH findings (run collision + path traversal), revised implementation order after GPT review
+- **Path traversal**: `Path.resolve()` + `is_relative_to()` as primary defense, regex allowlist `^[a-zA-Z0-9_\-]+$` on subproblem IDs. GPT confirmed this is correct. Known limitation: symlink TOCTOU (acceptable for single-process research tool)
+- **Adversarial fusion**: overrule + pass (score>=0.80) → pass_with_notes; overrule + pass_with_notes (confidence>=0.9) → fail_retryable. Confidence threshold prevents low-confidence adversarial from blocking legitimate marginal passes
+- **Event store ownership**: EventStore does not mkdir; `run()` creates directory, EventStore.append() creates on first write. Size check includes pending event bytes (`current + len(serialized) + 1 > max`). Single-process thread-safe via Lock; multi-process not in scope
+- **LLM judge**: budgeted (60s timeout), graceful fallback to keyword scoring on failure. Judge and adversarial budget recorded against shared reservation
+- **GPT gate verdict**: PASS_WITH_NOTES (binary PASS) for declared scope (single-process research tool). First review: BLOCK with 3 HIGH findings; all resolved in re-review. Accepted limitations: symlink TOCTOU, multi-process, billing-grade budget accuracy
 
 ## 自主推进协议
 

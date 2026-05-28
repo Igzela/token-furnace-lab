@@ -84,3 +84,13 @@
 - Adversarial: mock adversarial review + deterministic fusion
 - Event store: schema validation, size limit, thread safety
 - Budget: real reservation tracking, no synthetic hacks
+
+## GPT Gate Re-Review (after BLOCK fix)
+
+First review: BLOCK (3 HIGH findings). All resolved:
+- **Fusion**: PASS_WITH_NOTES now downgradeable via overrule + confidence >= 0.9
+- **EventStore size**: pending event bytes included in size check
+- **Budget**: judge and adversarial budget recorded against reservation
+
+Final: **PASS_WITH_NOTES** (binary PASS for single-process scope)
+Accepted limitations: symlink TOCTOU, multi-process, billing-grade budget accuracy
