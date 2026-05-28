@@ -89,6 +89,11 @@ Active Research — 个人研究项目，迭代中，无外部用户。
   - phase-a-001: FOC baseline design (COMPLETE)
   - 详细进度见 `knowledge/wiki/small-dc-link-foc-technical-route.md`
 - `mcp-bridge-boundary-audit` — MCP 桥接边界审计
+- `orchestration-001~004` — 多 agent 编排系列
+  - orchestration-001: basic pipeline (82/100 PASS)
+  - orchestration-002: mock execution (100/100 PASS)
+  - orchestration-003: schema enforcement + failure injection (10/10 PASS)
+  - orchestration-004: real multi-model cross-audit (77/100 PASS_WITH_NOTES — Claude 78 + GPT 76, GPT found 2 additional HIGH blocking findings)
 
 ### Key Decisions (FOC derivation series)
 
@@ -98,6 +103,13 @@ Active Research — 个人研究项目，迭代中，无外部用户。
 - **GPT communication**: via Chrome DevTools MCP (`fill` + `press_key Enter`, not `type_text`)
 - **GPT role**: Cross-verification of derivations; GPT caught 3 critical formula/numerical errors and identified derivation-005 APD/model bugs
 - **derivation-005 final review**: corrected electrical-power balance and APD sanity checks passed GPT final verification with notes; next recommended experiment is APD branch current / inductor / switching-device sizing
+
+### Key Decisions (Orchestration series)
+
+- **Gate priority rules**: Validator FAIL > Evidence errors > Blocking findings > Score > Verdict (validated with 10/10 failure-injection tests)
+- **JSON-block parsing**: Agents output structured JSON in markdown; validators extract from JSON blocks first, then fall back to markdown regex
+- **Cross-audit delta**: GPT found 2 HIGH blocking findings Claude missed (universal hard-fault rules, CONTROLLED_COAST ambiguity) — cross-audit adds real value
+- **Next experiment**: orchestration-005 — Multi-worktree parallel subproblem dispatch
 
 ## 自主推进协议
 

@@ -15,6 +15,8 @@
 | Phase 3 | Workflow quality-gate audit | workflow-quality-gate-audit-phase-1 | COMPLETE/PASS_WITH_NOTES/PASS | 6a7df2d |
 | Phase 4 | PDF-to-algorithm extraction benchmark | pdf-to-algorithm-benchmark-phase-1 | COMPLETE/PASS_WITH_NOTES/PASS | 0e46c71 |
 | Phase 5 | Multi-agent orchestration | multi-agent-orchestration | COMPLETE/PASS | 4313909 |
+| Phase 6 | Schema enforcement + failure injection | orchestration-003 | COMPLETE/PASS (10/10) | eec471a |
+| Phase 7 | Real multi-model cross-audit | orchestration-004 | COMPLETE/PASS_WITH_NOTES | 11bd806 |
 
 ## Platform Consolidation
 
@@ -45,6 +47,8 @@ Capabilities validated:
 - **Closeout generator** (final_verdict.yaml + synthesis.md)
 - **Agent bridge** (Claude Code CLI wrapper for automated execution)
 - **E2E test**: queue → subagent → gate → ACCEPT (82/100)
+- **Real cross-audit**: Claude reviews model, GPT cross-reviews Claude's artifact (orchestration-004)
+- **JSON-block parsing**: parse_review() and validators handle structured JSON output from agents
 
 ## Reusable Templates
 
