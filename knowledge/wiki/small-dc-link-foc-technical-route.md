@@ -109,6 +109,7 @@ Technical roadmap for 22µF DC-link + sensorless FOC + water pump + TMS320F28035
 | phase-b-001 | I-f startup | COMPLETE | 76/100 | GPT PASS_WITH_NOTES. 168/216 pass. Observer model weak, ke/ψf unresolved, blend needs gating |
 | phase-b-002 | I-f startup corrected | COMPLETE | 82/100 | GPT PASS_WITH_NOTES. All B-001 corrections applied. 252/252 pass. ψ_f=0.08Wb, expanded observer, observer-gated blend |
 | phase-b-003 | Three-threshold blend | COMPLETE | 90/100 | GPT PASS. Three-threshold blend + anti-chatter. 189/189 pass (100%), max blend error 5°, implementation-ready |
+| phase-b-004 | State machine impl spec | COMPLETE | 78/100 | GPT PASS_WITH_NOTES. 7 states, gated transitions, 2KB trace, angle_t, 15 faults, retry escalation. Corrected trace RAM and angle type |
 
 ## References
 
@@ -129,3 +130,4 @@ Technical roadmap for 22µF DC-link + sensorless FOC + water pump + TMS320F28035
 - E7: phase-b-001 — I-f startup + FOC transition (76/100 PASS_WITH_NOTES, COMPLETE): 168/216 configs pass, 300ms startup, observer model needs expansion, ke/ψf convention unresolved
 - E8: phase-b-002 — Corrected I-f startup (82/100 PASS_WITH_NOTES, COMPLETE): All B-001 corrections applied, ψ_f=0.08Wb, expanded observer, 252/252 pass, 35.5° max error needs three thresholds
 - E9: phase-b-003 — Three-threshold blend + anti-chatter (90/100 PASS, COMPLETE): 189/189 pass, max blend error 5°, implementation-ready state machine with logging and fallback profiles
+- E10: phase-b-004 — State machine implementation spec (78/100 PASS_WITH_NOTES, COMPLETE): C header+impl, 2KB trace, angle_t, 15 faults, retry escalation. GPT corrected trace RAM (56KB→2KB) and angle type

@@ -1,0 +1,29 @@
+experiment: phase-b-004
+timestamp: "20260528-080000"
+branch: exp/hermes-perm-audit-001
+status: complete
+score: 78
+verdict: PASS_WITH_NOTES
+parent_experiment: phase-b-003
+gpt_final_score: 78
+gpt_verdict: PASS_WITH_NOTES
+key_findings:
+  - State machine: 7 states, gated transitions (dwell + conditions)
+  - Trace buffer: 16B × 128 = 2KB (corrected from 56KB)
+  - Angle type: uint16_t angle_t (corrected from q12)
+  - Alpha: 0.1% advance, 0.5% rollback with hysteresis
+  - Faults: 15 codes including timeouts and escalation
+  - Retry: nominal→fallback→strong→FAULT_LATCHED
+artifacts:
+  - model_outputs/state_machine_spec.md
+  - model_outputs/startup_sm.h
+  - model_outputs/startup_sm.c
+  - model_outputs/gpt-review.md
+  - model_outputs/synthesis.md
+  - synthesis/synthesis.md
+next_step: implement on TMS320F28035 hardware with trace logging
+not_yet_validated:
+  - real pump startup friction
+  - ADC offset and dead-time effects
+  - SMO lock on actual hardware
+  - APD precharge behavior under real bus
