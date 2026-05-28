@@ -87,6 +87,7 @@ Active Research — 个人研究项目，迭代中，无外部用户。
   - derivation-004: APD sizing (78/100 PASS_WITH_TWO_CORRECTIONS)
   - derivation-005: joint simulation (GPT final PASS_WITH_NOTES 86/100 — corrected model conditionally accepted; 300W requires high nominal bus and high APD decoupling)
   - phase-a-001: FOC baseline design (COMPLETE)
+  - phase-e-001: runtime fault recovery model (72/100 PASS_WITH_NOTES — 12 states, 19 fault codes, GPT caught 7 major corrections)
   - 详细进度见 `knowledge/wiki/small-dc-link-foc-technical-route.md`
 - `mcp-bridge-boundary-audit` — MCP 桥接边界审计
 - `orchestration-001~004` — 多 agent 编排系列

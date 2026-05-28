@@ -117,11 +117,11 @@ python3 scripts/tf_orchestrator.py run <task.yaml> --mode <mock|queue|bridge>
 - Canonical cloud handoff branch: `main`
 - Research branch retained: `exp/hermes-perm-audit-001`
 - Active thread: `small-dc-link-foc-derivation`
-- Latest sealed run: `runs/small-dc-link-foc-derivation-005/20260528-010000`
-- Latest run status: `GPT_FINAL_PASS_WITH_NOTES` (86/100)
+- Latest sealed run: `runs/small-dc-link-foc-phase-e-001/20260528-130000`
+- Latest run status: `PASS_WITH_NOTES` (72/100)
 - New session entrypoint: `docs/SESSION_START_HERE.md`
 
-Derivation-005 is conditionally accepted as a research handoff. GPT rejected the first simulation conclusion due to model bugs, then final-reviewed the corrected model as `PASS_WITH_NOTES`: energy conservation and APD sanity checks pass; 100-200W is robust, and 300W is conditional on high nominal bus plus high APD decoupling. The next recommended experiment is APD branch current / inductor / switching-device sizing.
+Phase-e-001 runtime fault recovery model is complete. 12 states, 19 fault codes, 4 fault classes. GPT caught 7 major corrections (observer freeze, CONTROLLED_COAST split, Vdc derating formula, APD topology awareness, restart logic, hard-fault paths, retry policy). All corrections applied in v2. Next recommended: Phase A-004 Fixed-Point CPU/RAM Budget.
 
 Coding agents must update this file, the active run status, and the relevant `knowledge/wiki/` page before committing any accepted experiment result.
 
