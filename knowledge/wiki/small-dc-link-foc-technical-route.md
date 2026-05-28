@@ -103,7 +103,7 @@ Technical roadmap for 22µF DC-link + sensorless FOC + water pump + TMS320F28035
 | derivation-004 | APD sizing | COMPLETE | 78/100 | 16µF/500V H-bridge, 90% decoupling enables 300W |
 | derivation-005 | joint simulation | COMPLETE | 86/100 | GPT final: PASS_WITH_NOTES. 300W conditionally feasible (44% pass). Recommended baseline: 22µF+22µF/500V APD, robust=200W, stretch=300W |
 | phase-a-001 | FOC design | COMPLETE | - | F28035 budget OK, modules defined |
-| phase-a-002 | FOC interface | PENDING | - | Parallel: interface design only, no implementation |
+| phase-a-002 | FOC interface | COMPLETE | 86/100 | GPT PASS_WITH_NOTES. v3: theta mux, IqLimiter, split omega scaling, applied voltage SMO |
 | phase-a-003 | FOC hw test | PENDING | - | Next: validate on 1360µF hardware |
 
 ## References
