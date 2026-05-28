@@ -1,0 +1,18 @@
+experiment: phase-a-004
+timestamp: "20260528-190000"
+branch: exp/hermes-perm-audit-001
+status: in_progress
+parent_experiment: phase-e-001
+objective: >
+  Fixed-Point CPU/RAM Budget and Overflow Audit for TMS320F28035.
+  Verify FOC + SMO + startup + APD fit in 15k cycles/12KB RAM
+  with no Q-format overflow.
+score_min: 70
+max_repair_rounds: 2
+artifacts:
+  - model_outputs/cpu_budget_table.yaml
+  - model_outputs/ram_budget_table.yaml
+  - model_outputs/fixed_point_range_audit.md
+  - model_outputs/scheduler_plan.md
+  - model_outputs/risk_matrix.yaml
+next_step: phase_a_005_fixed_point_implementation

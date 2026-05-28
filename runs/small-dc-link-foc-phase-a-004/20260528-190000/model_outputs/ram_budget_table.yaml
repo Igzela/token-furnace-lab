@@ -1,0 +1,115 @@
+# RAM Budget Table — Phase A-004
+# TMS320F28035: 12KB SARAM total
+# Goal: fit control state + trace + stack + LUTs
+
+target:
+  mcu: TMS320F28035
+  total_ram_kb: 12
+  total_ram_bytes: 12288
+  trace_buffer_target_kb: 2
+
+# --- Memory Breakdown ---
+sections:
+
+  - name: FOC_control_state
+    bytes: 128
+    description: "Id_ref, Iq_ref, Id, Iq, Vd, Vq, Vα, Vβ, theta, omega_e, Vdc, Idc, speed_ref, speed_actual"
+    fields: 14
+    q_format: "Q15 (2 bytes each)"
+    calculation: "14 fields × 2 bytes = 28 bytes actual; padded to 32 for alignment. With doubles: 14 × 8 = 112 bytes."
+
+  - name: PI_controllers
+    bytes: 96
+    description: "2 current PIs + 1 speed PI + 1 APD energy PI = 4 instances"
+    fields_per_instance: "Kp, Ki, integral, output, limits (6 fields × 2 bytes)"
+    calculation: "4 instances × 6 fields × 2 bytes = 48 bytes. Padded to 64 for cache line."
+
+  - name: SMO_state
+    bytes: 64
+    description: "Observer states: iα_hat, iβ_hat, zα, zβ, omega_hat, theta_hat, LPF states"
+    fields: 8
+    q_format: "Q15 (2 bytes each) + Q20 for angle (4 bytes)"
+    calculation: "8 × 2 + 2 × 4 = 24 bytes. Padded to 32."
+
+  - name: SVPWM_state
+    bytes: 32
+    description: "Duty cycles (3 phase), sector, dead-time compensation, modulation index"
+    fields: 6
+    calculation: "6 × 2 bytes = 12 bytes. Padded to 16."
+
+  - name: Startup_SM_state
+    bytes: 16
+    description: "State enum, timer, align_current, ramp_counter, fault_count"
+    fields: 5
+    calculation: "5 × 2 bytes = 10 bytes. Padded to 12."
+
+  - name: APD_state
+    bytes: 48
+    description: "APD energy, APD current ref, APD current actual, capacitor voltage, PI state, fault flags"
+    fields: 8
+    calculation: "8 × 2 bytes = 16 bytes. Padded to 24."
+
+  - name: Fault_state
+    bytes: 32
+    description: "Fault flags (bitmap), fault timer, fault count, recovery attempt, last fault code"
+    fields: 5
+    calculation: "5 × 2 bytes = 10 bytes. Padded to 12."
+
+  - name: Scheduler_state
+    bytes: 16
+    description: "ISR count, 1kHz tick, background tick, utilization counter"
+    fields: 4
+    calculation: "4 × 4 bytes (uint32) = 16 bytes."
+
+  - name: Trace_buffer
+    bytes: 2048
+    description: "Circular buffer for debug/diagnostic trace. 2KB target."
+    entries: 256
+    bytes_per_entry: 8
+    calculation: "256 entries × 8 bytes = 2048 bytes (exactly 2KB)"
+
+  - name: Sin_cos_LUT
+    bytes: 512
+    description: "256-entry sin/cos LUT in Q15. 2 values per entry (sin + cos)."
+    entries: 256
+    calculation: "256 × 2 × 2 bytes = 1024 bytes. Could use 128-entry quarter-wave (256 bytes) with symmetry."
+    optimization: "Quarter-wave LUT reduces to 256 bytes"
+
+  - name: ADC_calibration
+    bytes: 32
+    description: "ADC offset, gain, channel mapping for 2 current channels + Vdc + Vapd"
+    calculation: "8 × 2 bytes (Q15) = 16 bytes. Padded to 24."
+
+  - name: Communication_buffer
+    bytes: 64
+    description: "SPI/UART TX/RX buffer for host communication. 32B TX + 32B RX."
+    calculation: "2 × 32 bytes = 64 bytes."
+
+  - name: Stack
+    bytes: 512
+    description: "C stack for ISR nesting, local variables, function calls. 512B is typical for FOC ISR."
+    calculation: "Deep call chain: main → ISR → SMO → atan2. Max depth ~20 frames × 8 bytes = 160 bytes. 512B provides safety margin."
+
+# --- Summary ---
+summary:
+  total_ram_bytes: 3504
+  total_ram_with_lut_optimization: 3016
+  total_ram_kb: 3.42
+  total_ram_with_optimization_kb: 2.95
+  headroom_bytes: 8784
+  headroom_pct: 72
+  verdict: PASS
+  notes: >
+    Total RAM usage is 3.4KB (29% of 12KB) with full sin/cos LUT, or 2.95KB (24%)
+    with quarter-wave optimization. Headroom of 72% is excellent. The trace buffer
+    at 2KB is the largest single consumer and can be reduced if needed.
+  risk_areas:
+    - item: Trace buffer size
+      risk: low
+      mitigation: "2KB is target; can reduce to 1KB if RAM pressure. Not a blocker."
+    - item: Stack depth
+      risk: medium
+      mitigation: "512B assumed; verify with static stack analysis or run-time stack canary. C28x has hardware stack overflow detection."
+    - item: Quarter-wave LUT
+      risk: low
+      mitigation: "Saves 768 bytes. Use 128-entry LUT + symmetry decode. Standard practice on C28x."
