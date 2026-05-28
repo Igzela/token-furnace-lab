@@ -2,25 +2,25 @@
 
 ## Verdict
 
-`LOCAL_PASS_NEEDS_GPT_FINAL`
+`GPT_FINAL_PASS_WITH_NOTES`
 
 ## What Is Accepted
 
 - A joint simulation run exists for FOC + APD + 22uF DC-link behavior.
 - GPT found material model bugs in the first result.
 - The first "0/486 pass" conclusion must not be used as a design decision.
-- The corrected model has regenerated sweep outputs: 336/486 overall pass, 66/162 300W pass.
+- The corrected model has regenerated sweep outputs with 100-200W robust and 300W conditional on high nominal bus plus high APD decoupling.
 - The revised local synthesis is 88/100 PASS.
-- Any sealed conclusion about 300W feasibility must wait for GPT final verification.
+- GPT final verification is `PASS_WITH_NOTES` (86/100): energy conservation and APD sanity checks pass, while voltage-margin derating remains an approximation.
 
-## What Is Not Yet Accepted
+## What Is Not Accepted As Robust Yet
 
 - "16uF APD is insufficient for 300W"
-- "16uF APD is sufficient for 300W"
+- "16uF APD is robustly sufficient for 300W"
 - "470uF is required"
 - "22uF + APD is limited to 100W"
 
-Those may become true after verification, but they are not accepted knowledge yet.
+The accepted result is narrower: 22uF DC-link plus APD remains viable, 100-200W is the first-demo target, and 300W is a stretch target requiring the next device-sizing experiment.
 
 ## Evidence Chain
 
@@ -28,14 +28,15 @@ Those may become true after verification, but they are not accepted knowledge ye
 - `model_outputs/claude-code-derivation.md` records the initial simulation approach.
 - `model_outputs/gpt-verification.md` records GPT's `NEEDS_MODEL_FIX` review.
 - `model_outputs/simulation_model.py` and `model_outputs/sweep_results.md` record the local model and sweep output.
-- `model_outputs/synthesis.md` records the latest local interpretation and should be reconciled against GPT's review.
+- `model_outputs/gpt-final-verification.md` records GPT's final `PASS_WITH_NOTES` review.
+- `model_outputs/synthesis.md` records the latest local interpretation.
 
 ## Next Experiment Step
 
-Run final verification of the corrected model:
+Run APD/device sizing:
 
-1. Confirm DC-link energy uses electrical motor power.
-2. Add or inspect average power balance sanity checks.
-3. Verify APD energy centering and clamping behavior.
-4. Send corrected results to GPT or another judge model for final review.
-5. Update the wiki only after the conclusion is accepted.
+1. APD branch current and inductor sizing.
+2. Switching-device voltage/current stress.
+3. Capacitor tolerance, RMS current, and thermal checks.
+4. High-line surge and 500V film capacitor margin.
+5. Later model upgrade: mechanical speed dynamics with pump load instead of voltage-margin derating.

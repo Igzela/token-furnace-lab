@@ -85,7 +85,7 @@ Active Research — 个人研究项目，迭代中，无外部用户。
   - derivation-002: energy balance (85/100 PASS_WITH_NOTES)
   - derivation-003: FOC voltage envelope (82/100 PASS_WITH_NOTES)
   - derivation-004: APD sizing (78/100 PASS_WITH_TWO_CORRECTIONS)
-  - derivation-005: joint simulation (88/100 LOCAL_PASS_NEEDS_GPT_FINAL — corrected sweep passes locally, GPT final pending)
+  - derivation-005: joint simulation (GPT final PASS_WITH_NOTES 86/100 — corrected model conditionally accepted; 300W requires high nominal bus and high APD decoupling)
   - phase-a-001: FOC baseline design (COMPLETE)
   - 详细进度见 `knowledge/wiki/small-dc-link-foc-technical-route.md`
 - `mcp-bridge-boundary-audit` — MCP 桥接边界审计
@@ -97,7 +97,23 @@ Active Research — 个人研究项目，迭代中，无外部用户。
 - **Motor parameter**: ψ_f ≤ 0.103 for 300V/4000rpm (revised from 0.15 to 0.08)
 - **GPT communication**: via Chrome DevTools MCP (`fill` + `press_key Enter`, not `type_text`)
 - **GPT role**: Cross-verification of derivations; GPT caught 3 critical formula/numerical errors and identified derivation-005 APD/model bugs
-- **Model corrections under review** (derivation-005): electrical power (3-phase), quadratic Iq solution, APD energy center init
+- **derivation-005 final review**: corrected electrical-power balance and APD sanity checks passed GPT final verification with notes; next recommended experiment is APD branch current / inductor / switching-device sizing
+
+## 自主推进协议
+
+负责推进本仓库的 coding agent 可以自主把研究任务推进到可交接提交，不需要每一步都等待人工指令。自主权限覆盖 run 创建、模型输出整理、交叉审计、synthesis、wiki 沉淀、validator 修复、commit 和 push；不覆盖生产部署、CI/CD 发布、重型框架或外部自动发布。
+
+每个 session 必须执行：
+
+1. 先运行 `git status --short --branch`，识别未提交或未跟踪的 run，不能覆盖其他 agent 的工作。
+2. 读取启动文档和最新 run 的 `status.md`、`run.yaml`、`task.md`、`model_outputs/`、`synthesis/`。
+3. 如果已有 in-progress run，优先完成它的 next step；若不处理，明确保持 untouched，不开同主题竞争 run。
+4. 如果最新 run 已关闭，从 decision record、current-state index 或 wiki 的 next step 选择下一个实验。
+5. 接受任何 finding 前必须有 synthesis 和 cross-audit 记录。
+6. 对变更过的 run 执行 `python3 scripts/validate_run.py runs/<experiment>/<timestamp>/`，并在 commit 前执行 `python3 scripts/check_agent_handoff.py`。
+7. 状态、accepted finding、active run 或 next experiment 变化时，同步更新入口文档、current-state index、相关 wiki、run metadata 和 synthesis。
+8. commit message 使用英文；当工作树只包含本 session 预期变更时 push 当前分支。
+9. final report 留下 latest commit、verdict、validation、remaining risks、next experiment。
 
 ## 决策与知识库
 
@@ -111,6 +127,7 @@ Active Research — 个人研究项目，迭代中，无外部用户。
 
 - 修改 `scripts/` 后，用 `python scripts/validate_run.py runs/<latest>` 验证
 - 新建 run 后，必须运行 `scripts/validate_run.py` 确保结构合规
+- 每次 commit 前运行 `python3 scripts/check_agent_handoff.py`
 
 ## Commit 规范
 

@@ -1,15 +1,16 @@
 run_id: small-dc-link-foc-derivation-005
 timestamp: "20260528-010000"
-status: LOCAL_PASS_NEEDS_GPT_FINAL
+status: GPT_FINAL_PASS_WITH_NOTES
 topic: FOC + APD + 22uF DC-link joint dynamic simulation
 branch: exp/hermes-perm-audit-001
 verdicts:
-  experiment_verdict: LOCAL_PASS_CANDIDATE
-  model_verdict: LOCAL_PASS_NEEDS_GPT_FINAL
+  experiment_verdict: PASS_WITH_NOTES
+  model_verdict: GPT_FINAL_PASS_WITH_NOTES
   reason: >
-    GPT rejected the first model conclusion due to simulation bugs. The corrected
-    local model now reports 336/486 passing configurations and an 88/100 PASS
-    synthesis, but GPT final verification is still pending before sealing the result.
+    GPT rejected the first model conclusion due to simulation bugs, then final-reviewed
+    the corrected model as PASS_WITH_NOTES (86/100). Energy conservation and APD
+    sanity checks pass. 100-200W is robust; 300W is conditional on high nominal bus
+    and high APD decoupling.
 deliverables:
   - task.md
   - model_outputs/claude-code-derivation.md
@@ -18,5 +19,6 @@ deliverables:
   - model_outputs/sweep_results.md
   - model_outputs/dc_link_constraints.yaml
   - model_outputs/synthesis.md
+  - model_outputs/gpt-final-verification.md
   - synthesis/synthesis.md
-next_step: Send corrected sweep and revised synthesis to GPT or an independent judge for final verification.
+next_step: Start APD branch current / inductor / switching-device sizing; include capacitor tolerance, RMS/thermal checks, and high-line voltage margin.

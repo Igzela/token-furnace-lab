@@ -76,13 +76,15 @@ python3 scripts/validate_synthesis_evidence.py runs/<experiment>/<timestamp>/
 - Canonical cloud handoff branch: `main`
 - Research branch retained: `exp/hermes-perm-audit-001`
 - Active thread: `small-dc-link-foc-derivation`
-- Latest run: `runs/small-dc-link-foc-derivation-005/20260528-010000`
-- Latest run status: `LOCAL_PASS_NEEDS_GPT_FINAL`
+- Latest sealed run: `runs/small-dc-link-foc-derivation-005/20260528-010000`
+- Latest run status: `GPT_FINAL_PASS_WITH_NOTES` (86/100)
 - New session entrypoint: `docs/SESSION_START_HERE.md`
 
-Derivation-005 must not be treated as sealed. GPT rejected the first simulation conclusion due to model bugs; a revised local synthesis now reports 88/100 PASS, but GPT final verification is still pending before updating accepted design constraints.
+Derivation-005 is conditionally accepted as a research handoff. GPT rejected the first simulation conclusion due to model bugs, then final-reviewed the corrected model as `PASS_WITH_NOTES`: energy conservation and APD sanity checks pass; 100-200W is robust, and 300W is conditional on high nominal bus plus high APD decoupling. The next recommended experiment is APD branch current / inductor / switching-device sizing.
 
 Coding agents must update this file, the active run status, and the relevant `knowledge/wiki/` page before committing any accepted experiment result.
+
+Responsible coding agents may autonomously advance research tasks from run creation to committed handoff. They must finish or explicitly preserve any in-progress run visible in `git status`, record cross-audit before knowledge acceptance, run validators, update canonical docs, commit in English, and push the active branch when the tree contains only the intended changes.
 
 ## Tags
 

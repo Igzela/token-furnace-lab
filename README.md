@@ -4,7 +4,7 @@ AI Agent 系统压测与知识蒸馏实验室
 
 **New coding-agent sessions should start with [docs/SESSION_START_HERE.md](docs/SESSION_START_HERE.md), then [AGENTS.md](AGENTS.md) and [CLAUDE.md](CLAUDE.md).**
 
-Agents must update the active run status, current-state index, and knowledge wiki after every commit-sized experiment change.
+Responsible coding agents may autonomously advance research tasks from run creation to committed handoff. They must update the active run status, current-state index, and knowledge wiki after every commit-sized experiment change, then run `python3 scripts/check_agent_handoff.py` before commit.
 
 ## Goal
 

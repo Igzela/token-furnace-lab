@@ -17,17 +17,19 @@ Token Furnace Lab is a local AI-agent experiment lab. It deliberately spends man
 
 ## Latest Active Run
 
-Latest run: `runs/small-dc-link-foc-derivation-005/20260528-010000`
+Latest sealed run: `runs/small-dc-link-foc-derivation-005/20260528-010000`
 
-Status: `LOCAL_PASS_NEEDS_GPT_FINAL`
+Status: `GPT_FINAL_PASS_WITH_NOTES`
 
 What happened:
 
 - Claude Code built a low-order FOC + APD + 22uF DC-link simulation and sweep.
 - GPT flagged model bugs in the first result, especially DC-link energy using mechanical instead of electrical motor power.
-- A revised local synthesis says corrected results are 88/100 PASS and 300W has passing configurations, but GPT final verification is still pending before accepting the conclusion.
+- A revised local synthesis reported 88/100 PASS and 300W passing configurations.
+- GPT final verification is recorded as `PASS_WITH_NOTES` (86/100): energy conservation and APD sanity checks pass; 300W is conditional and requires high nominal bus plus high APD decoupling.
+- The recommended next experiment is APD branch current / inductor / switching-device sizing, not more energy-model refinement.
 
-Do not treat derivation-005 as a final design decision until the corrected model, GPT verification, and synthesis are reconciled.
+Treat derivation-005 as a conditionally accepted research handoff, not a production design. If `git status` shows a newer uncommitted run, inspect it and either continue it deliberately or leave it untouched before starting another run.
 
 ## Must-Read Order
 
@@ -45,6 +47,18 @@ Do not treat derivation-005 as a final design decision until the corrected model
 - Do not accept a model output as knowledge until cross-audit and synthesis are documented.
 - Keep run artifacts small, structured, and reviewable.
 - Prefer local scripts and simple Python/Bash over new dependencies.
+
+## Autonomous Research Closeout
+
+The responsible coding agent may autonomously advance this repo from research task to committed handoff:
+
+1. Finish the latest active run before opening a competing run in the same thread.
+2. Create or update structured artifacts: `task.md`, `run.yaml` or `status.md`, `model_outputs/`, `synthesis/`, decision/next-step note, and cost or usage note when known.
+3. Record cross-audit before accepting findings into `knowledge/`.
+4. Run `python3 scripts/validate_run.py runs/<experiment>/<timestamp>/` for changed runs and `python3 scripts/check_agent_handoff.py` before commit.
+5. Update this file, `docs/runs/token-furnace-current-state.md`, relevant wiki notes, `CLAUDE.md`, `AGENTS.md`, and active run metadata when status or accepted findings change.
+6. Commit and push when the working tree contains only the intended session changes.
+7. Leave the next session latest commit, verdict, validation result, remaining risks, and next experiment.
 
 ## Documentation Maintenance
 
