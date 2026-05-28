@@ -1,0 +1,33 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Review Artifact",
+  "description": "Schema for review artifacts. Runners extract JSON block and validate against this schema.",
+  "type": "object",
+  "required": ["review_id", "score", "verdict", "findings", "final_recommendation"],
+  "properties": {
+    "review_id": { "type": "string", "minLength": 1 },
+    "reviewer_role": { "type": "string" },
+    "score": { "type": "integer", "minimum": 0, "maximum": 100 },
+    "verdict": { "type": "string", "enum": ["PASS", "PASS_WITH_NOTES", "FAIL"] },
+    "confidence": { "type": "string", "enum": ["HIGH", "MEDIUM", "LOW"] },
+    "findings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "severity", "blocking", "claim"],
+        "properties": {
+          "id": { "type": "string" },
+          "severity": { "type": "string", "enum": ["CRITICAL", "HIGH", "MEDIUM", "LOW"] },
+          "category": { "type": "string" },
+          "blocking": { "type": "boolean" },
+          "status": { "type": "string", "enum": ["open", "addressed", "dismissed"] },
+          "evidence_path": { "type": "string" },
+          "claim": { "type": "string" },
+          "correction": { "type": "string" }
+        }
+      }
+    },
+    "final_recommendation": { "type": "string", "enum": ["ACCEPT", "REPAIR", "ESCALATE", "REJECT"] }
+  },
+  "additionalProperties": false
+}

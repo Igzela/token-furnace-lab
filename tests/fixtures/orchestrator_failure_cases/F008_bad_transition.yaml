@@ -1,0 +1,26 @@
+# F008: State machine has undefined transition target
+# A transition targets a state not defined in the state table.
+# Expected: REPAIR (structural validator fails)
+
+subproblem_id: f008_bad_transition
+artifact_exists: true
+artifact_type: state_machine
+# The state machine validator would catch this:
+validator_errors:
+  - "HIGH: Transition target 'NONEXISTENT_STATE' not in state definitions"
+review_content: |
+  # Review
+
+  **Score**: 75
+  **Verdict**: PASS_WITH_NOTES
+  **Confidence**: MEDIUM
+
+  ## Findings
+
+  Minor structural issues.
+
+  ## Final Recommendation
+
+  ACCEPT
+expected_gate: REPAIR
+expected_reason_contains: "Validator"

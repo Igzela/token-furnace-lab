@@ -1,0 +1,22 @@
+# F003: Invalid verdict in review
+# The review uses a verdict not in {PASS, PASS_WITH_NOTES, FAIL}.
+# Expected: REPAIR (invalid verdict = structural failure)
+
+subproblem_id: f003_bad_verdict
+artifact_exists: true
+review_content: |
+  # Review
+
+  **Score**: 75
+  **Verdict**: CONDITIONAL_PASS
+  **Confidence**: HIGH
+
+  ## Findings
+
+  Minor issues only.
+
+  ## Final Recommendation
+
+  ACCEPT
+expected_gate: REPAIR
+expected_reason_contains: "Verdict"

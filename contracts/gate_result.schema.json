@@ -1,0 +1,26 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Gate Result",
+  "description": "Schema for quality gate evaluation results.",
+  "type": "object",
+  "required": ["status", "round", "reason", "next_action"],
+  "properties": {
+    "status": { "type": "string", "enum": ["ACCEPT", "REPAIR", "ESCALATE", "REJECT"] },
+    "round": { "type": "integer", "minimum": 1 },
+    "score": { "type": ["integer", "null"], "minimum": 0, "maximum": 100 },
+    "verdict": { "type": ["string", "null"] },
+    "blocking_findings": { "type": "integer", "minimum": 0 },
+    "validator_errors": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "evidence_errors": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "schema_valid": { "type": "boolean" },
+    "reason": { "type": "string" },
+    "next_action": { "type": "string", "enum": ["done", "repair", "escalate"] }
+  },
+  "additionalProperties": false
+}

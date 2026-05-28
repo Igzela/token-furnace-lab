@@ -1,0 +1,45 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Agent Artifact",
+  "description": "Schema for agent-produced artifacts. Agents write Markdown but must include a JSON block matching this schema.",
+  "type": "object",
+  "required": ["artifact_id", "task_id", "artifact_type", "summary"],
+  "properties": {
+    "artifact_id": { "type": "string", "minLength": 1 },
+    "task_id": { "type": "string", "minLength": 1 },
+    "agent_role": { "type": "string" },
+    "artifact_type": { "type": "string", "enum": ["derivation", "state_machine", "review", "design_doc", "code", "test"] },
+    "summary": { "type": "string", "minLength": 1 },
+    "claims": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "claim"],
+        "properties": {
+          "id": { "type": "string" },
+          "claim": { "type": "string" },
+          "evidence_path": { "type": "string" },
+          "evidence_type": { "type": "string", "enum": ["file", "formula", "measurement", "reference", "logic"] },
+          "confidence": { "type": "string", "enum": ["HIGH", "MEDIUM", "LOW"] }
+        }
+      }
+    },
+    "assumptions": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "changed_files": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "tests_or_checks": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "unresolved_risks": {
+      "type": "array",
+      "items": { "type": "string" }
+    }
+  },
+  "additionalProperties": false
+}

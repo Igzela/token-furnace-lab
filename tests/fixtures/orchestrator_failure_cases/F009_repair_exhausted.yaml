@@ -1,0 +1,28 @@
+# F009: Repair rounds exhausted
+# Score below threshold after max repair rounds.
+# Expected: ESCALATE (can't repair anymore)
+
+subproblem_id: f009_exhausted
+artifact_exists: true
+round_num: 3  # max_repair_rounds = 2, so round 3 triggers escalation
+review_content: |
+  # Review
+
+  **Score**: 55
+  **Verdict**: FAIL
+  **Confidence**: HIGH
+
+  ## Findings
+
+  ### F01: Multiple critical gaps
+  - **id**: F01
+  - **severity**: CRITICAL
+  - **blocking**: true
+  - **claim**: Model fundamentally incomplete
+  - **correction**: Full rewrite needed
+
+  ## Final Recommendation
+
+  REJECT
+expected_gate: ESCALATE
+expected_reason_contains: "rounds"

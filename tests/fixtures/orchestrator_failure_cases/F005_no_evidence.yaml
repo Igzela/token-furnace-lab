@@ -1,0 +1,27 @@
+# F005: Accepted finding without evidence_path
+# A HIGH blocking finding has no evidence_path field.
+# Expected: REPAIR (evidence validation fails)
+
+subproblem_id: f005_no_evidence
+artifact_exists: true
+review_content: |
+  # Review
+
+  **Score**: 80
+  **Verdict**: PASS_WITH_NOTES
+  **Confidence**: HIGH
+
+  ## Findings
+
+  ### F01: Safety concern
+  - **id**: F01
+  - **severity**: HIGH
+  - **blocking**: true
+  - **claim**: Thermal derating missing before over-temperature trip
+  - **correction**: Add thermal derate state between NORMAL and FAULT
+
+  ## Final Recommendation
+
+  ACCEPT
+expected_gate: REPAIR
+expected_reason_contains: "evidence"

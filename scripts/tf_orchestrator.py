@@ -396,10 +396,12 @@ def parse_review(text: str) -> Review:
     final_rec = final_match.group(1) if final_match else None
 
     findings = []
+    # Handle both "id: val" and "**id**: val" formats
     finding_pattern = re.finditer(
-        r"id\s*:\s*(\w+).*?severity\s*:\s*(\w+).*?blocking\s*:\s*(\w+)"
-        r"(?:.*?evidence_path\s*:\s*(\S+))?"
-        r".*?claim\s*:\s*(.+?)(?:\ncorrection\s*:\s*(.+))?",
+        r"\*{0,2}id\*{0,2}\s*:\s*(\w+).*?\*{0,2}severity\*{0,2}\s*:\s*(\w+)"
+        r".*?\*{0,2}blocking\*{0,2}\s*:\s*(\w+)"
+        r"(?:.*?\*{0,2}evidence_path\*{0,2}\s*:\s*(\S+))?"
+        r".*?\*{0,2}claim\*{0,2}\s*:\s*(.+?)(?:\n\*{0,2}correction\*{0,2}\s*:\s*(.+))?",
         text,
         re.DOTALL,
     )
@@ -443,13 +445,21 @@ def validate_evidence(review: Review, run_dir: Path) -> List[str]:
 def evaluate_gate(task: Dict, review: Review, round_num: int, artifact_exists: bool,
                   validator_errors: Optional[List[str]] = None,
                   evidence_errors: Optional[List[str]] = None) -> GateResult:
+    """Evaluate quality gate with fixed priority rules:
+    1. Artifact exists?
+    2. Validator errors (CRITICAL/HIGH)?
+    3. Evidence errors?
+    4. Blocking findings (override score)?
+    5. Score below threshold?
+    6. Verdict not accepted?
+    """
     score_min = task.get("score_min", 80)
     max_repair = task.get("max_repair_rounds", 2)
 
     if not artifact_exists:
         return GateResult("REJECT", round_num, review.score, review.verdict, 0, "Artifact missing", "escalate")
 
-    # Validator errors override review — structural issues are blocking
+    # Priority 1: Validator errors override review — structural issues are blocking
     if validator_errors:
         crit_errors = [e for e in validator_errors if any(sev in e for sev in ("CRITICAL", "HIGH"))]
         if crit_errors:
@@ -459,7 +469,7 @@ def evaluate_gate(task: Dict, review: Review, round_num: int, artifact_exists: b
             return GateResult("ESCALATE", round_num, review.score, review.verdict, len(crit_errors),
                               f"Validator errors after {round_num} rounds: {'; '.join(crit_errors[:3])}", "escalate")
 
-    # Evidence errors — blocking findings without valid evidence
+    # Priority 2: Evidence errors — blocking findings without valid evidence
     if evidence_errors:
         if round_num < max_repair:
             return GateResult("REPAIR", round_num, review.score, review.verdict, len(evidence_errors),
@@ -467,15 +477,8 @@ def evaluate_gate(task: Dict, review: Review, round_num: int, artifact_exists: b
         return GateResult("ESCALATE", round_num, review.score, review.verdict, len(evidence_errors),
                           f"Evidence errors after {round_num} rounds: {'; '.join(evidence_errors[:3])}", "escalate")
 
+    # Priority 3: Blocking findings override score — even 91 can't cover structural failures
     blocking = [f for f in review.findings if f.blocking]
-
-    if review.score < score_min:
-        if round_num < max_repair:
-            return GateResult("REPAIR", round_num, review.score, review.verdict, len(blocking),
-                              f"Score {review.score} < {score_min}", "repair")
-        return GateResult("ESCALATE", round_num, review.score, review.verdict, len(blocking),
-                          f"Score {review.score} < {score_min} after {round_num} rounds", "escalate")
-
     if blocking:
         if round_num < max_repair:
             return GateResult("REPAIR", round_num, review.score, review.verdict, len(blocking),
@@ -483,10 +486,20 @@ def evaluate_gate(task: Dict, review: Review, round_num: int, artifact_exists: b
         return GateResult("ESCALATE", round_num, review.score, review.verdict, len(blocking),
                           f"{len(blocking)} blocking findings after {round_num} rounds", "escalate")
 
+    # Priority 4: Score below threshold
+    if review.score < score_min:
+        if round_num < max_repair:
+            return GateResult("REPAIR", round_num, review.score, review.verdict, 0,
+                              f"Score {review.score} < {score_min}", "repair")
+        return GateResult("ESCALATE", round_num, review.score, review.verdict, 0,
+                          f"Score {review.score} < {score_min} after {round_num} rounds", "escalate")
+
+    # Priority 5: Verdict in accept set
     if review.verdict in ACCEPT_VERDICTS:
         return GateResult("ACCEPT", round_num, review.score, review.verdict, 0,
                           f"Score {review.score}, verdict {review.verdict}", "done")
 
+    # Priority 6: Verdict not accepted
     if round_num < max_repair:
         return GateResult("REPAIR", round_num, review.score, review.verdict, 0,
                           f"Verdict {review.verdict} not in {ACCEPT_VERDICTS}", "repair")

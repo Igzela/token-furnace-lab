@@ -1,0 +1,21 @@
+# F002: Missing score in review
+# The review artifact has no score field.
+# Expected: REPAIR (score missing = structural failure)
+
+subproblem_id: f002_no_score
+artifact_exists: true
+review_content: |
+  # Review
+
+  **Verdict**: PASS_WITH_NOTES
+  **Confidence**: HIGH
+
+  ## Findings
+
+  No issues found.
+
+  ## Final Recommendation
+
+  ACCEPT
+expected_gate: REPAIR
+expected_reason_contains: "Score"

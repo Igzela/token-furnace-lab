@@ -1,0 +1,22 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Run State",
+  "description": "Schema for orchestrator run state (idempotent resume).",
+  "type": "object",
+  "required": ["completed"],
+  "properties": {
+    "completed": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "required": ["gate_status", "score", "round"],
+        "properties": {
+          "gate_status": { "type": "string" },
+          "score": { "type": ["integer", "null"] },
+          "round": { "type": "integer" }
+        }
+      }
+    }
+  },
+  "additionalProperties": false
+}

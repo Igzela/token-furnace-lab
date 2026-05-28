@@ -1,0 +1,25 @@
+# F007: Forbidden path touched
+# The artifact claims to have modified a forbidden path.
+# Expected: REPAIR (scope violation)
+
+subproblem_id: f007_forbidden
+artifact_exists: true
+review_content: |
+  # Review
+
+  **Score**: 85
+  **Verdict**: PASS_WITH_NOTES
+  **Confidence**: MEDIUM
+
+  ## Findings
+
+  No blocking issues.
+
+  ## Final Recommendation
+
+  ACCEPT
+# Scope validator would catch: .env modified
+scope_violations:
+  - "forbidden_path: .env"
+expected_gate: REPAIR
+expected_reason_contains: "scope"

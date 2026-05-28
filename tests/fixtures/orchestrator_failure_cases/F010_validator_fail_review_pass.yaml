@@ -1,0 +1,27 @@
+# F010: Validator FAIL but review PASS
+# The state machine validator fails, but the review gives a passing score.
+# This tests that validator errors override review score.
+# Expected: REPAIR (validator failure overrides review)
+
+subproblem_id: f010_conflict
+artifact_exists: true
+artifact_type: state_machine
+validator_errors:
+  - "CRITICAL: No UNIVERSAL hard-fault block in transition matrix"
+  - "HIGH: Active state FOC_NORMAL missing oc_trip path"
+review_content: |
+  # Review
+
+  **Score**: 88
+  **Verdict**: PASS
+  **Confidence**: HIGH
+
+  ## Findings
+
+  Model looks solid overall.
+
+  ## Final Recommendation
+
+  ACCEPT
+expected_gate: REPAIR
+expected_reason_contains: "Validator"

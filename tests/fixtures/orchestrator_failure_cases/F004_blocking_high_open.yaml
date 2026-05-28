@@ -1,0 +1,27 @@
+# F004: Score PASS but blocking HIGH finding still open
+# Score is 90 (above threshold) but a HIGH blocking finding is unresolved.
+# Expected: REPAIR (blocking findings override score)
+
+subproblem_id: f004_blocking_open
+artifact_exists: true
+review_content: |
+  # Review
+
+  **Score**: 90
+  **Verdict**: PASS
+  **Confidence**: HIGH
+
+  ## Findings
+
+  ### F01: Critical safety gap
+  - **id**: F01
+  - **severity**: HIGH
+  - **blocking**: true
+  - **claim**: Overcurrent protection missing from UNIVERSAL section
+  - **correction**: Add oc_trip to UNIVERSAL hard-fault block
+
+  ## Final Recommendation
+
+  ACCEPT
+expected_gate: REPAIR
+expected_reason_contains: "blocking"

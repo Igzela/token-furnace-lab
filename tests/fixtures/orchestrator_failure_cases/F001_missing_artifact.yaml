@@ -1,0 +1,22 @@
+# F001: Missing artifact file
+# The artifact file does not exist at the expected path.
+# Expected: REJECT (artifact missing)
+
+subproblem_id: f001_missing
+artifact_exists: false
+review_content: |
+  # Review
+
+  **Score**: 85
+  **Verdict**: PASS_WITH_NOTES
+  **Confidence**: HIGH
+
+  ## Findings
+
+  No issues found.
+
+  ## Final Recommendation
+
+  ACCEPT
+expected_gate: REJECT
+expected_reason_contains: "Artifact missing"

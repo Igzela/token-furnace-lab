@@ -1,0 +1,67 @@
+matrix_id: orchestrator-failure-injection
+name: Orchestrator Failure-Injection Conformance Matrix
+date: '2026-05-28'
+total_cases: 10
+passed: 10
+failed: 0
+false_accept_count: 0
+verdict: PASS
+cases:
+- id: F001_missing_artifact
+  expected: REJECT
+  actual: REJECT
+  passed: true
+  reason: Artifact missing
+- id: F002_missing_score
+  expected: REPAIR
+  actual: REPAIR
+  passed: true
+  reason: Score 0 < 70
+- id: F003_invalid_verdict
+  expected: REPAIR
+  actual: REPAIR
+  passed: true
+  reason: Verdict FAIL not in {'PASS_WITH_NOTES', 'PASS'}
+- id: F004_blocking_high_open
+  expected: REPAIR
+  actual: REPAIR
+  passed: true
+  reason: 'Evidence errors: HIGH: Blocking finding F01 has no evidence_path'
+- id: F005_no_evidence
+  expected: REPAIR
+  actual: REPAIR
+  passed: true
+  reason: 'Evidence errors: HIGH: Blocking finding F01 has no evidence_path'
+- id: F006_evidence_not_exist
+  expected: REPAIR
+  actual: REPAIR
+  passed: true
+  reason: 'Evidence errors: HIGH: Blocking finding F01 evidence_path not found: nonexistent/path/model.md'
+- id: F007_forbidden_path
+  expected: REPAIR
+  actual: REPAIR
+  passed: true
+  reason: 'Evidence errors: forbidden_path: .env'
+- id: F008_bad_transition
+  expected: REPAIR
+  actual: REPAIR
+  passed: true
+  reason: 'Validator errors: HIGH: Transition target ''NONEXISTENT_STATE'' not in
+    state definitions'
+- id: F009_repair_exhausted
+  expected: ESCALATE
+  actual: ESCALATE
+  passed: true
+  reason: 'Evidence errors after 3 rounds: HIGH: Blocking finding F01 has no evidence_path'
+- id: F010_validator_fail_review_pass
+  expected: REPAIR
+  actual: REPAIR
+  passed: true
+  reason: 'Validator errors: CRITICAL: No UNIVERSAL hard-fault block in transition
+    matrix; HIGH: Active state FOC_NORMAL missing oc_trip path'
+criteria:
+  critical_cases_pass: 100%
+  false_accept_count: 0
+  forbidden_path_accept_count: 0
+  schema_invalid_accept_count: 0
+  blocking_finding_accept_count: 0

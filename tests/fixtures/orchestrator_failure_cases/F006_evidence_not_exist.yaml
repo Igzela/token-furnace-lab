@@ -1,0 +1,28 @@
+# F006: evidence_path points to non-existent file
+# A HIGH blocking finding has an evidence_path that doesn't exist.
+# Expected: REPAIR (evidence file not found)
+
+subproblem_id: f006_bad_evidence
+artifact_exists: true
+review_content: |
+  # Review
+
+  **Score**: 82
+  **Verdict**: PASS_WITH_NOTES
+  **Confidence**: HIGH
+
+  ## Findings
+
+  ### F01: Missing transition
+  - **id**: F01
+  - **severity**: HIGH
+  - **blocking**: true
+  - **evidence_path**: nonexistent/path/model.md
+  - **claim**: Vapd_ov fault path not defined
+  - **correction**: Add vapd_ov to UNIVERSAL section
+
+  ## Final Recommendation
+
+  ACCEPT
+expected_gate: REPAIR
+expected_reason_contains: "evidence"
