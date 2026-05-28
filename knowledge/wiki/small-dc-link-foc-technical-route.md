@@ -86,12 +86,13 @@ Technical roadmap for 22µF DC-link + sensorless FOC + water pump + TMS320F28035
 2. ~~**22µF ripple model**: Papers assume large capacitance~~ → **RESOLVED** (derivation-001+002): energy-based model shows 22µF feasible at 300W with 50%pp Vdc swing, but torque ripple limits to ~170W
 3. ~~**Torque ripple coupling~~ → **PARTIALLY RESOLVED** (derivation-002): speed ripple <0.5% OK, but torque ripple = 100% at full power (binding constraint). GPT final: constraint is "T_ripple < 30% × T_rated" (not T_avg)
 4. ~~**Sensorless FOC under large ripple**: Robustness assessment needed~~ → **RESOLVED** (derivation-001): <10%pp conservative, 10-20%pp attemptable with Vdc feedforward
-5. **Input topology**: Single-phase or three-phase? — must be confirmed before proceeding
-6. **APD energy buffer sizing**: ~~APD not required if J is sufficient~~ → **REVISED** (derivation-002): APD required for 300W → **RESOLVED** (derivation-004): 16µF/500V H-bridge, 90% decoupling, enables 300W → **RESOLVED** (derivation-005): 300W achievable with 22µF+APD, 66/162 configs pass, best 2.3%pp ripple
+5. **Input topology**: Single-phase or three-phase? — **RESOLVED** (phase-c-002): Both feasible. Three-phase 22µF works without APD. Single-phase needs 90% APD.
+6. **APD energy buffer sizing**: ~~APD not required if J is sufficient~~ → **REVISED** (derivation-002): APD required for 300W → **RESOLVED** (derivation-004): 16µF/500V H-bridge, 90% decoupling, enables 300W → **RESOLVED** (derivation-005): 300W achievable with 22µF+APD, 66/162 configs pass, best 2.3%pp ripple → **CLOSED** (phase-c-003): 22µF+90% APD robust worst-case (-20% Cdc, low-line)
 7. **FOC baseline validation**: Phase A design complete, needs implementation and hardware test
 8. ~~**Low-line 4 missing checks** (GPT final)~~ → **RESOLVED** (derivation-003): Vreq(speed,Iq) derived, Iq_max quadratic solved, max speed table, high-line overvoltage checked
 9. **ψ_f must be ≤ 0.103** for 300V/4000rpm (revised from 0.15 to 0.08)
 10. **300W requires ≥6632rpm** under 30% rated-torque ripple limit (66% above rated speed)
+11. **DC-link ripple management** → **CLOSED** (phase-c-001/002/003): 22µF+90% APD robust. Three-phase 22µF works without APD. Margin characterized.
 
 ## Experiment Progress
 
