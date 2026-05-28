@@ -108,6 +108,7 @@ Active Research — 个人研究项目，迭代中，无外部用户。
   - orchestration-014: adversarial review module (COMPLETE — devil's advocate + defense + three-way fusion, mock verified)
   - orchestration-015: expanded real benchmark (COMPLETE/PASS — 4 cases: SE-006/009/010/011; route accuracy 100%, 0 false accepts, adaptive +14.2 vs baseline)
   - merged-001: merged harness (COMPLETE/PASS — event store + budget + quality gates from token-efficient + real LLM from furnace; mock 4/4, real 4/4, avg 0.88)
+  - merged-001-prod: merged harness production upgrade (COMPLETE/PASS — S1-S4 security hardening, G1-G5 production gaps, V1-V4 validation, adversarial review + LLM judge; mock 4/4 PASS, path traversal rejected, event store schema+size+thread-safe; GPT gate + cross-review verified)
 
 ### Key Decisions (FOC derivation series)
 
@@ -132,6 +133,15 @@ Active Research — 个人研究项目，迭代中，无外部用户。
 - **Adversarial review**: three-way fusion (original + devil's advocate + defense) with blocking-override rule; any blocking finding from any reviewer triggers REPAIR; validated in mock mode, real LLM execution pending
 - **Real benchmark variance**: LLM non-determinism causes ±5 point score swings between runs; route accuracy (100%) and false accept rate (0) are stable metrics; absolute score comparison needs ≥10 cases for statistical significance
 - **L6 PASS**: adaptive avg 82.8 vs baseline 68.5 (+14.2), route accuracy 100%, 0 false accepts, adversarial review caught 2 HIGH blocking findings with real LLM
+
+### Key Decisions (Merged Harness Production)
+
+- **Run identity**: `merged-{time_ns}-{uuid8}` format with `mkdir(exist_ok=False)` prevents collision
+- **Path traversal**: regex allowlist `^[a-zA-Z0-9_\-]+$` on subproblem IDs, covers null-byte injection
+- **Adversarial fusion**: downgrade only when gate score >= 0.80 (pass), advisory only for pass_with_notes — prevents adversarial from blocking legitimate marginal passes
+- **Event store ownership**: EventStore does not mkdir; `run()` creates directory, EventStore.append() creates on first write
+- **LLM judge**: budgeted (60s timeout), graceful fallback to keyword scoring on failure
+- **GPT gate verdict**: BLOCK with 2 HIGH findings (run collision + path traversal), revised implementation order after GPT review
 
 ## 自主推进协议
 
