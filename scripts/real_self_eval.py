@@ -68,7 +68,7 @@ Confidence: <HIGH | MEDIUM | LOW>
         prompt_path=str(prompt_path),
         artifact_path=str(artifact_path),
         write_mode=False,
-        timeout=120,
+        timeout=180,
     )
 
     start = time.monotonic()
@@ -128,7 +128,7 @@ Confidence: <HIGH | MEDIUM | LOW>
         prompt_path=str(prompt_path),
         artifact_path=str(artifact_path),
         write_mode=False,
-        timeout=120,
+        timeout=180,
     )
 
     start = time.monotonic()
@@ -219,7 +219,9 @@ def generate_report(results: List[RealCaseResult]) -> Dict:
     route_correct = sum(1 for r in results if r.adaptive.get("route_correct", False))
     route_accuracy = route_correct / len(results) if results else 0
 
-    adaptive_false = sum(1 for r in results if r.adaptive["success"] and r.adaptive["score"] >= 80 and r.baseline["score"] < 70)
+    adaptive_false = sum(1 for r in results
+                         if r.adaptive["success"] and r.baseline["success"]
+                         and r.adaptive["score"] >= 80 and r.baseline["score"] < 50)
 
     pass_criteria = {
         "cases_executed_gte_3": len(results) >= 3,

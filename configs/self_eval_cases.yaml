@@ -84,3 +84,37 @@ cases:
     expected_strategy: closed_loop_repair
     source_run: null
     seen: false
+
+  # --- Real-execution cases (small_task: true) ---
+  - id: SE-009
+    name: "Repair broken validator references in wiki page"
+    task_text: "The Validator Types table in knowledge/wiki/orchestrator-quality-gate-policy.md references validate_state_machine.py but is missing entries for validate_review_artifact.py, validate_scope_diff.py, and validate_synthesis_evidence.py (all exist in scripts/). Add the missing rows to the table, keeping the existing format. Produce the corrected table as output."
+    task_type: repair
+    domain: documentation
+    risk_level: low
+    expected_strategy: implementation_with_validators
+    source_run: null
+    seen: false
+    small_task: true
+
+  - id: SE-010
+    name: "Validate review artifact against schema"
+    task_text: "Read contracts/review_artifact.schema.json and the actual review artifact at runs/orchestration-006/20260528-120000/artifacts/claude_review_round_1.md. Check that the review artifact contains a JSON block that conforms to the schema (required fields, field types, enum values). Produce a validation report listing each checked field, pass/fail status, and any issues found."
+    task_type: validation
+    domain: orchestrator
+    risk_level: low
+    expected_strategy: simple_review
+    source_run: null
+    seen: false
+    small_task: true
+
+  - id: SE-011
+    name: "Cross-audit two wiki pages for consistency"
+    task_text: "Compare knowledge/wiki/orchestrator-quality-gate-policy.md and knowledge/wiki/worker-gate-conformance.md. Identify any contradictions, overlapping rules, or gaps between the two documents (e.g., one says a check is required but the other does not mention it, or they use different terminology for the same concept). Produce a delta report listing each inconsistency with the specific lines or sections involved."
+    task_type: review
+    domain: documentation
+    risk_level: low
+    expected_strategy: policy_application
+    source_run: null
+    seen: false
+    small_task: true

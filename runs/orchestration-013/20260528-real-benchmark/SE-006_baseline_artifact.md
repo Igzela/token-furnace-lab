@@ -1,10 +1,10 @@
-Now I have enough data to produce the review.
+Now I have enough context to produce the review.
 
 ---
 
-## Review: `knowledge/wiki/small-dc-link-foc-technical-route.md`
+## Review: `knowledge/wiki/permission-boundary-model.md`
 
-**Score: 72/100**
+**Score: 58**
 **Verdict: PASS_WITH_NOTES**
 **Confidence: HIGH**
 
@@ -12,40 +12,45 @@ Now I have enough data to produce the review.
 
 ### Findings
 
-1. **[HIGH] phase-e-001 state count is wrong.** Wiki line 117 says "10 states, 19 fault codes" but the synthesis (`runs/small-dc-link-foc-phase-e-001/.../synthesis/synthesis.md:9`) says **12 states**. The state coverage table in synthesis lists 4+2+2+4 = 12 distinct states. This is a factual error propagated from a stale v1 — the synthesis was updated to v2 after GPT corrections.
+- **[HIGH] Missing critical safety detail: live scope is disabled by design.** The wiki mentions 5 scopes but does not note that `live` has `allowed: []` and `status: not_enabled`. This is the single most important property of the permission model. Source: repo-reader line 35, DR-0002.
 
-2. **[HIGH] phase-a-004 missing from Experiment Progress table.** This is a completed, committed experiment (`7b32276`, `17fe3be`) with synthesis and GPT review. It has no row in the table and no E-reference entry. Current-state.md documents it as "PASS_WITH_NOTES (corrected v2)" with ISR budget correction (6000 cycles, not 15000) and two-layer observer design.
+- **[HIGH] Missing critical safety detail: R4/R5 risk classes are not enabled.** The wiki mentions R0-R5 but does not note that R4 (external side effect) and R5 (private content) are explicitly disabled. Source: repo-reader line 37.
 
-3. **[MEDIUM] Broken markdown in Critical Gap #3.** Line 87 has `~~**Torque ripple coupling~~` — missing the closing `~~` before `**`. The strikethrough doesn't render.
+- **[HIGH] Missing cross-references to related wiki pages.** Three sibling wiki pages (`policy-runtime-drift.md`, `deny-path-testing.md`, `agent-approval-authority.md`) are derived from the same audit and provide essential context. None are linked. A reader of this page gets no signal that the most critical finding (policy-runtime drift) is documented elsewhere.
 
-4. **[MEDIUM] Gap #10 may be stale relative to derivation-005.** Line 94 says "300W requires ≥6632rpm under 30% rated-torque ripple limit" but derivation-005 (line 105) reports "300W conditionally feasible (44% pass)" with 22µF+APD at lower speeds. The gap text doesn't reflect the derivation-005 conditional feasibility finding — it reads as an absolute barrier. Needs clarification on whether 6632rpm is still the binding constraint or was relaxed by APD.
+- **[MEDIUM] Evaluator is too vague to be actionable.** "Check that each scope has a corresponding risk class mapping and gate checklist" does not specify what constitutes a valid mapping, what to do if mappings are missing, or how to verify gate enforcement at runtime. Compare with `deny-path-testing.md` which gives a concrete count-based test.
 
-5. **[MEDIUM] Next experiment not documented.** Phase-a-004 synthesis states "Next: Phase A-005 Fixed-Point Implementation Skeleton" but the wiki page has no "Next Steps" or forward-looking section. A new session reading only this wiki would not know the recommended next action.
+- **[MEDIUM] Missing the 13-gate checklist detail.** The repo-reader confirms 13 required checks before live execution (LIVE_ENABLED, Charlie approval, TTL, idempotency key, rollback plan, etc.). The wiki page mentions "gate checklists" generically but does not reference the count or key gates.
 
-6. **[LOW] Reference numbering has a gap.** References jump from E14 (phase-a-003) directly to E15 (phase-e-001). There is no E-reference for phase-a-004. This suggests the reference list was not updated when phase-a-004 was completed.
+- **[MEDIUM] Missing ChatGPT approval restriction.** The repo-reader and GPT architect both converge on: "ChatGPT CANNOT be final approver." This is a defining constraint of the approval model. Not mentioned.
 
-7. **[LOW] Gaps #7, #9, #10 are open but no "OPEN" marker.** Unlike gaps #1-#6, #8, #11 which have strikethrough + resolution, gaps 7/9/10 are just plain text. This is correct behavior (they ARE open) but inconsistent formatting makes it hard to scan for remaining work.
+- **[LOW] No reference to source artifacts.** The page cites `hermes-perm-audit-001` but does not link to the specific model outputs (`gpt-architect.md`, `claude-code-repo-reader.md`) or the decision record (`DR-0002`).
 
----
-
-### Cross-Reference Summary
-
-| Source | States | Wiki | Match? |
-|--------|--------|------|--------|
-| phase-e-001 synthesis (v2) | 12 states | 10 states | **NO** |
-| phase-a-004 synthesis | exists, PASS_WITH_NOTES | missing from table | **NO** |
-| derivation-005 synthesis | 300W conditionally feasible | gap #10 says 6632rpm required | **Stale** |
-| Run directories (18 total) | 18 experiments | 18 rows in table | YES (once a-004 added: 19) |
-| Current-state.md | phase-a-004 documented | wiki silent | **NO** |
+- **[LOW] Observation/Rule/Evaluator format is correct but thin.** The observation is accurate but surface-level. A reader unfamiliar with the audit gets no sense of *why* this model exists or what risks it mitigates.
 
 ---
 
-### Final Recommendation
+### Accuracy Verification
 
-**REPAIR** — The wiki page needs three targeted fixes before it can serve as the authoritative technical route reference:
+| Claim | Source | Status |
+|-------|--------|--------|
+| 5-scope model (read, plan, approval.local, dry_run, live) | repo-reader line 35 | CORRECT |
+| Risk classes R0-R5 | repo-reader line 37 | CORRECT |
+| Scopes, risk classes, gates are separate concerns | GPT architect architecture assessment | CORRECT |
+| Source: hermes-perm-audit-001 | run directory confirmed | CORRECT |
 
-1. Fix phase-e-001 state count: 10 → 12
-2. Add phase-a-004 row to Experiment Progress table and E-reference
-3. Fix broken strikethrough markdown in gap #3
-4. Clarify gap #10 in light of derivation-005 conditional feasibility
-5. Add "Next Steps" section noting Phase A-005 as the recommended next experiment
+All factual claims are accurate. No incorrect statements found.
+
+---
+
+### Final Recommendation: **REPAIR**
+
+The page is factually correct but missing safety-critical details that a future reader would need. Specifically:
+
+1. Add that `live` scope is disabled (`allowed: []`, `not_enabled`)
+2. Add that R4/R5 are not enabled
+3. Add cross-references to `policy-runtime-drift.md`, `deny-path-testing.md`, `agent-approval-authority.md`, and `DR-0002`
+4. Sharpen the evaluator with a concrete check (e.g., "Verify live scope has `allowed: []`; verify R4/R5 are not in any enabled risk class list")
+5. Mention the 13-gate checklist and the ChatGPT approval restriction
+
+The factual content is sound; the repair is about completeness and cross-linking, not correction.

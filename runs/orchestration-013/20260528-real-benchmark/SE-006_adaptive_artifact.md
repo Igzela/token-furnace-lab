@@ -1,42 +1,24 @@
-I now have enough data to produce the review. The target page is `multi-agent-orchestration-architecture.md` (most recently modified wiki page, May 28 10:25).
+I've completed the review. Here's my assessment of the wiki pages against the current codebase and project state:
 
 ---
 
-## Review: `knowledge/wiki/multi-agent-orchestration-architecture.md`
-
-**Score: 74**
-**Verdict: PASS_WITH_NOTES**
+**Score: 52/100**
+**Verdict: FAIL**
 **Confidence: HIGH**
 
-### Findings
+## Findings
 
-- **[HIGH] Line count stale (line 25)**: Wiki says `tf_orchestrator.py` is "833 lines". Actual: 1175 lines. The orchestrator has grown ~40% since this was written. Undermines reader trust in other numbers.
+- **HIGH** `multi-agent-orchestration-architecture.md:25` — Orchestrator line count wrong: states "833 lines", actual is **1175 lines** (`wc -l scripts/tf_orchestrator.py`).
+- **HIGH** `multi-agent-orchestration-architecture.md:28-30` — Missing `bridge` mode. Lists 3 modes (queue/mock/command), actual choices are **4**: `queue`, `mock`, `command`, `bridge` (line 1125 of `tf_orchestrator.py`).
+- **HIGH** `multi-agent-orchestration-architecture.md:147` — "Single-threaded — subproblems execute sequentially" listed as current limitation is stale. `run_parallel_dispatch()` exists since orchestration-007, and `scripts/worktree_manager.py` implements parallel worktree dispatch.
+- **HIGH** `multi-agent-orchestration-architecture.md` — Missing 6 major components added in orchestration-005 through 013: `review_fusion.py`, `confidence_calibrator.py`, `adaptive_pipeline.py`, `adaptive_router.py`, `orchestrator_learn.py`, `policy_engine.py`. None are documented on this page.
+- **HIGH** `multi-agent-orchestration-architecture.md:169-184` — E2E test section references the original `runs/orchestration/20260528-101549/` run (82/100). Orchestration-013 with verified real LLM execution end-to-end is not mentioned.
+- **HIGH** `current-state.md:27` — Phase 16 (orchestration-013: real execution + adaptive full pipeline, COMPLETE/PASS) is missing from the completed phases table, despite being committed in `8340ebc`.
+- **MEDIUM** `small-dc-link-foc-technical-route.md:87` — Unclosed strikethrough markdown: `~~**Torque ripple coupling~~` missing closing `**` before `~~`, rendering the rest of the line as broken formatting.
+- **MEDIUM** `small-dc-link-foc-technical-route.md:117` — Experiment progress table missing `phase-a-004` entry (fixed-point CPU/RAM budget, PASS_WITH_NOTES). Listed in CLAUDE.md but absent from wiki.
+- **MEDIUM** `orchestrator-quality-gate-policy.md` — Does not document the fused gate logic (`evaluate_fused_gate()`) or confidence-calibrated decision policy from orchestration-008.
+- **LOW** `multi-agent-orchestration-architecture.md:77` — Typo: `run/quarantine/` should be `runs/quarantine/` (runs directory, not run).
 
-- **[HIGH] Subcommands incomplete (line 33-36)**: Wiki lists 4 subcommands (`run`, `gate`, `validate`, `closeout`). Actual has 6: also `fuse` (orchestration-005) and `parallel` (orchestration-007). Two significant features are undocumented.
+## Final Recommendation
 
-- **[HIGH] Modes incomplete (line 29)**: Wiki lists `queue`, `mock`, `command`. Actual `--mode` also accepts `bridge` (added orchestration-013). The `bridge` mode is the most recent and most capable mode — missing it is a significant gap.
-
-- **[MEDIUM] CLI flags missing (line 29)**: `run` subcommand now accepts `--write-mode` (bridge write tools) and `--adaptive` (adaptive routing pipeline). Neither documented.
-
-- **[MEDIUM] "Single-threaded" limitation outdated (line 147)**: Wiki says "subproblems execute sequentially (parallel dispatch would require async)". Actual: `run_parallel_dispatch` exists and uses worktree-based parallel execution. This limitation was resolved in orchestration-007.
-
-- **[LOW] E2E test run path stale (line 171)**: References `runs/orchestration/20260528-101549/`. The directory naming convention has since changed to `runs/orchestration-NNN/`. Minor — the test results themselves are still valid.
-
-### What's accurate
-
-- Gate priority rules (lines 54-59): exact match with `evaluate_gate()` at line 488.
-- Validator table (lines 42-46): all 3 validators exist and their descriptions match.
-- Architecture diagram: still reflects the actual pipeline flow.
-- Design decisions section: all 4 rationales remain valid.
-- `validate_scope` not integrated claim (line 148): confirmed — `validate_scope()` is defined but never called in `run_orchestrate()`.
-
-### Final Recommendation
-
-**REPAIR** — The 5 HIGH/MEDIUM findings are factual inaccuracies that will mislead a reader trying to understand the current system. All fixes are editorial (update numbers, add missing entries to lists). No code changes needed.
-
-**Suggested repairs:**
-1. Update line count: "833 lines" → "1175 lines"
-2. Add `fuse` and `parallel` to subcommands list
-3. Add `bridge` to modes list
-4. Add `--write-mode` and `--adaptive` to CLI flags
-5. Remove or reword "Single-threaded" limitation to note parallel dispatch exists
+**REPAIR** — The `multi-agent-orchestration-architecture.md` page is significantly stale and will mislead any agent reading it at session start. The 4 missing modes, 6 missing components, stale limitations, and outdated E2E section need updating. The `current-state.md` needs Phase 16 added. The `small-dc-link-foc-technical-route.md` needs the phase-a-004 entry and the broken strikethrough fixed.
