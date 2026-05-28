@@ -396,7 +396,9 @@ def parse_review(text: str) -> Review:
 
     findings = []
     finding_pattern = re.finditer(
-        r"id\s*:\s*(\w+).*?severity\s*:\s*(\w+).*?blocking\s*:\s*(\w+).*?claim\s*:\s*(.+?)(?:\ncorrection\s*:\s*(.+))?",
+        r"id\s*:\s*(\w+).*?severity\s*:\s*(\w+).*?blocking\s*:\s*(\w+)"
+        r"(?:.*?evidence_path\s*:\s*(\S+))?"
+        r".*?claim\s*:\s*(.+?)(?:\ncorrection\s*:\s*(.+))?",
         text,
         re.DOTALL,
     )
@@ -406,18 +408,40 @@ def parse_review(text: str) -> Review:
             severity=m.group(2),
             blocking=m.group(3).lower() == "true",
             status="open",
-            evidence_path=None,
-            claim=m.group(4).strip(),
-            correction=(m.group(5) or "None").strip(),
+            evidence_path=m.group(4),
+            claim=m.group(5).strip(),
+            correction=(m.group(6) or "None").strip(),
         ))
 
     return Review(score=score, verdict=verdict, confidence=confidence, findings=findings, final_recommendation=final_rec)
 
 
+# --- Evidence validation ---
+
+def validate_evidence(review: Review, run_dir: Path) -> List[str]:
+    """Check that blocking findings have valid evidence paths."""
+    errors = []
+    for f in review.findings:
+        if not f.blocking:
+            continue
+        if not f.evidence_path:
+            errors.append(f"HIGH: Blocking finding {f.id} has no evidence_path")
+            continue
+        # Check if evidence file exists (relative to run_dir)
+        evidence_abs = run_dir / f.evidence_path
+        if not evidence_abs.exists():
+            # Also try relative to repo root
+            evidence_repo = REPO_ROOT / f.evidence_path
+            if not evidence_repo.exists():
+                errors.append(f"HIGH: Blocking finding {f.id} evidence_path not found: {f.evidence_path}")
+    return errors
+
+
 # --- Quality gate ---
 
 def evaluate_gate(task: Dict, review: Review, round_num: int, artifact_exists: bool,
-                  validator_errors: Optional[List[str]] = None) -> GateResult:
+                  validator_errors: Optional[List[str]] = None,
+                  evidence_errors: Optional[List[str]] = None) -> GateResult:
     score_min = task.get("score_min", 80)
     max_repair = task.get("max_repair_rounds", 2)
 
@@ -433,6 +457,14 @@ def evaluate_gate(task: Dict, review: Review, round_num: int, artifact_exists: b
                                   f"Validator errors: {'; '.join(crit_errors[:3])}", "repair")
             return GateResult("ESCALATE", round_num, review.score, review.verdict, len(crit_errors),
                               f"Validator errors after {round_num} rounds: {'; '.join(crit_errors[:3])}", "escalate")
+
+    # Evidence errors — blocking findings without valid evidence
+    if evidence_errors:
+        if round_num < max_repair:
+            return GateResult("REPAIR", round_num, review.score, review.verdict, len(evidence_errors),
+                              f"Evidence errors: {'; '.join(evidence_errors[:3])}", "repair")
+        return GateResult("ESCALATE", round_num, review.score, review.verdict, len(evidence_errors),
+                          f"Evidence errors after {round_num} rounds: {'; '.join(evidence_errors[:3])}", "escalate")
 
     blocking = [f for f in review.findings if f.blocking]
 
@@ -605,7 +637,12 @@ def run_orchestrate(task_path: Path, mode: str, timeout: int) -> None:
             review = parse_review(review_text)
             artifact_exists = artifact_path.exists()
 
-            gate = evaluate_gate(task, review, 1, artifact_exists, validator_errors=v_errors or None)
+            # Validate evidence for blocking findings
+            e_errors = validate_evidence(review, effective_run_dir)
+
+            gate = evaluate_gate(task, review, 1, artifact_exists,
+                                 validator_errors=v_errors or None,
+                                 evidence_errors=e_errors or None)
             gate_yaml = gate_result_yaml(gate)
 
             gate_path = run_dir / "gate_results" / f"{sub['id']}_round_1.yaml"
@@ -783,7 +820,12 @@ def run_gate(run_dir: Path, round_num: int) -> None:
         if task.get("run_validators", True):
             v_errors = validate_artifact(artifact_path, sub.get("artifact_type", ""))
 
-        gate = evaluate_gate(task, review, round_num, artifact_path.exists(), validator_errors=v_errors or None)
+        # Validate evidence
+        e_errors = validate_evidence(review, run_dir)
+
+        gate = evaluate_gate(task, review, round_num, artifact_path.exists(),
+                             validator_errors=v_errors or None,
+                             evidence_errors=e_errors or None)
 
         gate_path = run_dir / "gate_results" / f"{sub['id']}_round_{round_num}.yaml"
         gate_path.parent.mkdir(parents=True, exist_ok=True)
