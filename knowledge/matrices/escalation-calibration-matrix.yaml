@@ -1,0 +1,102 @@
+# Escalation Calibration Matrix — Orchestration-008
+# Confidence score weighting and decision policy calibration
+
+version: "1.0"
+orchestration: "008"
+source: "orchestration-007 timeout findings + orchestration-006 review rounds"
+
+confidence_weights:
+  reviewer_confidence: 0.20
+  evidence_quality: 0.25
+  validator_agreement: 0.25
+  cross_reviewer_convergence: 0.15
+  repair_history: 0.15
+
+level_thresholds:
+  HIGH: 80
+  MEDIUM: 60
+  LOW: 0
+
+decision_policy:
+  - condition: "budget_exhausted AND blocking_findings"
+    verdict: ESCALATE
+  - condition: "safety_critical_findings AND confidence_LOW"
+    verdict: ESCALATE
+  - condition: "blocking_findings AND repair_budget_remaining"
+    verdict: REPAIR
+  - condition: "blocking_findings AND repair_budget_exhausted"
+    verdict: ESCALATE
+  - condition: "validator_failures"
+    verdict: REPAIR
+  - condition: "confidence_LOW AND high_severity_findings"
+    verdict: ESCALATE
+  - condition: "no_blocking AND validators_pass AND confidence_HIGH/MEDIUM"
+    verdict: ACCEPT
+  - condition: "repeated_low_findings_only"
+    verdict: ACCEPT
+
+timeout_classification:
+  - pattern: "PWM_active AND no safe_transition_action"
+    classification: REPAIR
+  - pattern: "explicit PASSIVE_COAST or CONTROLLED_DECEL or PWM_disable"
+    classification: ACCEPT
+  - pattern: "ambiguous or unrecognized"
+    classification: REVIEW
+
+calibration_cases:
+  total: 9
+  passed: 9
+  results:
+    - id: timeout-001
+      expected: REPAIR
+      actual: REPAIR
+      pass: true
+    - id: timeout-002
+      expected: REPAIR
+      actual: REPAIR
+      pass: true
+    - id: timeout-003
+      expected: REPAIR
+      actual: REPAIR
+      pass: true
+    - id: timeout-004
+      expected: REVIEW
+      actual: REVIEW
+      pass: true
+    - id: timeout-005
+      expected: REVIEW
+      actual: REVIEW
+      pass: true
+    - id: timeout-006
+      expected: REPAIR
+      actual: REPAIR
+      pass: true
+    - id: timeout-ctrl-001
+      expected: ACCEPT
+      actual: ACCEPT
+      pass: true
+    - id: timeout-ctrl-002
+      expected: ACCEPT
+      actual: ACCEPT
+      pass: true
+    - id: timeout-ctrl-003
+      expected: ACCEPT
+      actual: ACCEPT
+      pass: true
+
+pipeline_tests:
+  - description: "Round 1 reviews (2 blocking) → REPAIR"
+    input: "orchestration-006 round 1 reviews"
+    expected_verdict: REPAIR
+    actual_verdict: REPAIR
+    pass: true
+  - description: "Round 2 reviews (0 blocking) → ACCEPT"
+    input: "orchestration-006 round 2 reviews"
+    expected_verdict: ACCEPT
+    actual_verdict: ACCEPT
+    pass: true
+  - description: "Budget exhausted + blocking → ESCALATE"
+    input: "orchestration-006 round 1 + budget_exhausted=True + repair_rounds=2"
+    expected_verdict: ESCALATE
+    actual_verdict: ESCALATE
+    pass: true

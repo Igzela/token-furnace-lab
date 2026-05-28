@@ -1,0 +1,85 @@
+# Orchestration-008: Confidence & Escalation Calibration Cases
+# Uses 6 unsafe timeout transitions from orchestration-007
+
+cases:
+  - id: timeout-001
+    finding:
+      id: "F-TIMEOUT-001"
+      claim: "timeout_3s → RESTART_PENDING: PWM running state transitions directly to restart"
+      severity: HIGH
+      blocking: true
+    expected_classification: REPAIR
+    rationale: "PWM-active state, no explicit safe transition action"
+
+  - id: timeout-002
+    finding:
+      id: "F-TIMEOUT-002"
+      claim: "timeout_3s → FAULT_LATCHED: PWM running state transitions directly to fault"
+      severity: HIGH
+      blocking: true
+    expected_classification: REPAIR
+    rationale: "PWM-active state, no explicit safe transition action"
+
+  - id: timeout-003
+    finding:
+      id: "F-TIMEOUT-003"
+      claim: "timeout_5s → FAULT_LATCHED: PWM running state transitions directly to fault latch"
+      severity: HIGH
+      blocking: true
+    expected_classification: REPAIR
+    rationale: "PWM-active state, no explicit safe transition action"
+
+  - id: timeout-004
+    finding:
+      id: "F-TIMEOUT-004"
+      claim: "timeout_500ms → FAULT_LATCHED: PRECHARGE state fast timeout to fault without PWM disable"
+      severity: HIGH
+      blocking: false
+    expected_classification: REVIEW
+    rationale: "PWM-disabled state (PRECHARGE), timeout to FAULT_LATCHED is acceptable — needs human review"
+
+  - id: timeout-005
+    finding:
+      id: "F-TIMEOUT-005"
+      claim: "timeout_200ms → RESTART_PENDING: ALIGN state very fast timeout bypasses safe state"
+      severity: HIGH
+      blocking: false
+    expected_classification: REVIEW
+    rationale: "PWM-active but stopped state (ALIGN), timeout to retry is acceptable — needs review"
+
+  - id: timeout-006
+    finding:
+      id: "F-TIMEOUT-006"
+      claim: "timeout_500ms → RESTART_PENDING: IF_RAMP running state fast timeout to restart without coast"
+      severity: HIGH
+      blocking: true
+    expected_classification: REPAIR
+    rationale: "PWM-active running state (IF_RAMP), should route through PASSIVE_COAST"
+
+  # Control cases: safe transitions that should be ACCEPT
+  - id: timeout-ctrl-001
+    finding:
+      id: "F-TIMEOUT-CTRL-001"
+      claim: "timeout_5s → PASSIVE_COAST: PWM running state transitions to passive coast"
+      severity: LOW
+      blocking: false
+    expected_classification: ACCEPT
+    rationale: "Explicit PASSIVE_COAST transition is safe"
+
+  - id: timeout-ctrl-002
+    finding:
+      id: "F-TIMEOUT-CTRL-002"
+      claim: "timeout_5s → CONTROLLED_DECEL: PWM running state transitions to controlled deceleration"
+      severity: LOW
+      blocking: false
+    expected_classification: ACCEPT
+    rationale: "Explicit CONTROLLED_DECEL transition is safe"
+
+  - id: timeout-ctrl-003
+    finding:
+      id: "F-TIMEOUT-CTRL-003"
+      claim: "fault_latched → pwm_disabled: fault state transitions with explicit PWM disable"
+      severity: LOW
+      blocking: false
+    expected_classification: ACCEPT
+    rationale: "Explicit PWM disable is safe"

@@ -1,0 +1,35 @@
+task_id: orchestration-008
+title: "Confidence & Escalation Calibration"
+objective: >
+  Implement synthetic confidence scoring, decision policy, timeout finding
+  classification, and escalation reporting. Calibrate against orchestration-007's
+  6 timeout findings and orchestration-006's review rounds.
+
+status: COMPLETE
+verdict: PASS
+score: 95
+
+artifacts:
+  - scripts/confidence_calibrator.py
+  - runs/orchestration-008/20260528-140000/calibration_cases.yaml
+  - runs/orchestration-008/20260528-140000/schemas/confidence_score.schema.json
+  - runs/orchestration-008/20260528-140000/schemas/escalation_report.schema.json
+  - runs/orchestration-008/20260528-140000/schemas/decision.schema.json
+  - knowledge/evaluator-rules/confidence-escalation-rules.md
+  - knowledge/matrices/escalation-calibration-matrix.yaml
+
+calibration:
+  total_cases: 9
+  passed: 9
+  pipeline_tests: 3
+  pipeline_passed: 3
+
+budget:
+  max_iterations: 4
+  actual_iterations: 3
+  wall_time_seconds: 120
+
+bugs_fixed:
+  - "Negation handling: 'without PWM disable' no longer triggers safe-action detection"
+  - "Default fallback: ACCEPT → REVIEW for unrecognized timeout patterns"
+  - "Repeated LOW findings: no longer forces REPAIR when no blocking findings"

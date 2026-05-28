@@ -20,6 +20,7 @@
 | Phase 8 | Review fusion + multi-reviewer gate | orchestration-005 | COMPLETE/PASS | 95f11b6 |
 | Phase 9 | Fused repair execution benchmark | orchestration-006 | COMPLETE/ACCEPT | 8074c82 |
 | Phase 10 | Multi-worktree parallel dispatch | orchestration-007 | COMPLETE/PASS | 4a2b85e |
+| Phase 11 | Confidence & escalation calibration | orchestration-008 | COMPLETE/PASS | pending |
 
 ## Platform Consolidation
 
@@ -54,6 +55,10 @@ Capabilities validated:
 - **JSON-block parsing**: parse_review() and validators handle structured JSON output from agents
 - **Review fusion**: Merge multiple reviewer outputs into fused gate decision (review_fusion.py)
 - **Fused gate**: evaluate_fused_gate() applies priority rules across merged findings
+- **Confidence calibration**: 5-component weighted scoring (reviewer_confidence, evidence_quality, validator_agreement, cross_reviewer_convergence, repair_history)
+- **Decision policy**: Priority-ordered ACCEPT/REPAIR/ESCALATE/REJECT based on conditions
+- **Timeout classifier**: Heuristic-based classification of timeout transitions with negation handling
+- **Escalation report**: Structured report for human decision when gate outputs ESCALATE
 
 ## Reusable Templates
 

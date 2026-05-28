@@ -97,6 +97,7 @@ Active Research — 个人研究项目，迭代中，无外部用户。
   - orchestration-005: review fusion + multi-reviewer gate (COMPLETE — findings union, blocking override, disagreement tracking)
   - orchestration-006: fused repair execution benchmark (COMPLETE — closed-loop verified, ACCEPT 92/90, 2 repair rounds)
   - orchestration-007: multi-worktree parallel dispatch (COMPLETE — 3/3 subproblems parallel, artifacts collected, ~30s wall time)
+  - orchestration-008: confidence & escalation calibration (COMPLETE/PASS — 9/9 calibration cases, 3/3 pipeline tests, 5-component confidence scoring, decision policy, timeout classifier)
 
 ### Key Decisions (FOC derivation series)
 
@@ -112,9 +113,10 @@ Active Research — 个人研究项目，迭代中，无外部用户。
 - **Gate priority rules**: Validator FAIL > Evidence errors > Blocking findings > Score > Verdict (validated with 10/10 failure-injection tests)
 - **JSON-block parsing**: Agents output structured JSON in markdown; validators extract from JSON blocks first, then fall back to markdown regex
 - **Cross-audit delta**: GPT found 2 HIGH blocking findings Claude missed (universal hard-fault rules, CONTROLLED_COAST ambiguity) — cross-audit adds real value
-- **Next experiment**: orchestration-007 — Multi-worktree parallel subproblem dispatch
+- **Next experiment**: orchestration-009 — Candidate TBD (see current-state index)
 - **Cascade pattern**: Fixing one dangling transition target exposes related ones in the same sequence; re-review catches defects the original review missed
 - **Closed-loop verified**: review_fusion → repair → re-review → fusion → ACCEPT works in 2 rounds
+- **Confidence calibration**: 5-component weighted scoring; repeated LOW findings are informational, not blocking; timeout classifier defaults to REVIEW for ambiguous patterns
 
 ## 自主推进协议
 
