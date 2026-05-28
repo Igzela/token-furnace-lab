@@ -16,24 +16,24 @@ constraints:
 operating_points:
   best_100W:
     Vnom: 354
-    Capd: 16uF
+    Capd: 12uF
     D_apd: 95%
     speed_rpm: 4000
-    vdc_ripple: 0.8%pp
+    vdc_ripple: 0.6%pp
     torque_ripple: 1.7%
 
   best_200W:
     Vnom: 354
-    Capd: 16uF
+    Capd: 12uF
     D_apd: 95%
     speed_rpm: 4000
-    vdc_ripple: 1.4%pp
+    vdc_ripple: 1.2%pp
     torque_ripple: 3.3%
 
   best_300W:
     Vnom: 354
-    Capd: 22uF
+    Capd: 12uF
     D_apd: 95%
     speed_rpm: 4000
-    vdc_ripple: 2.3%pp
-    torque_ripple: 5.0%
+    vdc_ripple: 1.8%pp
+    torque_ripple: 4.8%

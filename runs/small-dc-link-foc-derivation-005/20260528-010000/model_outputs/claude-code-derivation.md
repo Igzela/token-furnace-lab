@@ -96,9 +96,31 @@ With D=1.0 and unlimited APD voltage window:
 3. No ESR, no switching dynamics, no current loop bandwidth
 4. Torque ripple from residual power (1-D) is approximate
 
-## Next Steps
+## GPT Final Verification (PASS_WITH_NOTES, 86/100)
 
-1. GPT verification of corrected model
-2. Update wiki with revised findings
-3. Commit all derivation-005 files
-4. Proceed to Phase A-002 (FOC interface design)
+### Verdict
+- Energy conservation: PASS
+- APD sanity tests: PASS
+- Voltage margin derating: PASS_WITH_NOTES (acceptable for feasibility, not physical pump model)
+- 300W feasibility: CONDITIONALLY_PASS
+- 100-200W feasibility: PASS
+
+### GPT Recommended Engineering Baseline
+- Cdc=22µF, Capd=22µF/500V film, D=90-95%, Vnom=300V
+- Robust: 200W, Stretch: 300W, First demo: 100-200W
+- 16µF/500V as optimization target, not first-pass baseline
+
+### GPT Notes on Voltage Margin Scaling
+Ptarget = Pavg × min(1, Vmargin/Vmargin_nom) is a controller derating approximation, not a physical pump load model. Real pump: Pload ≈ P0 + kω³. Acceptable for feasibility simulation; document as approximation.
+
+### Remaining Model Issues (not blocking)
+1. Ideal single-phase power model (not real rectifier)
+2. APD average power model (no H-bridge dynamics)
+3. No capacitor ESR/RMS current/thermal
+4. No capacitor tolerance sweep
+5. No FOC current loop/SMO observer dynamics
+6. No mechanical pump dynamics
+7. High-line overvoltage needs surge check
+
+### GPT Recommendation for Next Derivation
+derivation-006: APD branch current / inductor / switching device sizing

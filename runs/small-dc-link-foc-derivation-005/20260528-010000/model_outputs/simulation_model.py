@@ -127,30 +127,27 @@ def run_simulation(cfg: SweepConfig, sp: SystemParams = None,
         Pin = Pavg * (1.0 - cos2wt)
 
         # ── 2. APD power command (absorb when Pin > Pavg) ────────
+        # Sign convention: Papd_cmd < 0 → APD absorbs from DC-link
+        #                   Papd_cmd > 0 → APD releases to DC-link
         Papd_cmd = -D * Pavg * cos2wt
 
         # ── 3. APD energy balance ────────────────────────────────
-        # Step 1: Clamp power to voltage window
+        # APD exchanges Papd_cmd power with DC-link (zero-mean buffer)
+        # Losses are a SEPARATE DC-link burden (not embedded in APD power)
         E_apd_new = E_apd + Papd_cmd * dt
         if E_apd_new > E_apd_hi:
-            Papd_clamped = (E_apd_hi - E_apd) / dt
+            Papd_buf = (E_apd_hi - E_apd) / dt
             E_apd = E_apd_hi
         elif E_apd_new < E_apd_lo:
-            Papd_clamped = (E_apd_lo - E_apd) / dt
+            Papd_buf = (E_apd_lo - E_apd) / dt
             E_apd = E_apd_lo
         else:
-            Papd_clamped = Papd_cmd
+            Papd_buf = Papd_cmd
             E_apd = E_apd_new
-        # Step 2: Apply losses only when APD is conducting (not at voltage limits)
-        # When clamped at limits, actual current ≈ 0, so losses ≈ 0
+
+        # APD losses: only when conducting (not at voltage limits)
         is_clamped = (E_apd >= E_apd_hi and Papd_cmd > 0) or (E_apd <= E_apd_lo and Papd_cmd < 0)
-        if is_clamped:
-            Papd_actual = Papd_clamped
-        else:
-            Ploss = sp.Ploss_apd_frac * abs(Papd_clamped)
-            Papd_actual = Papd_clamped - Ploss
-            E_apd -= Ploss * dt
-            E_apd = max(E_apd, E_apd_lo)
+        Ploss = 0.0 if is_clamped else sp.Ploss_apd_frac * abs(Papd_buf)
 
         Vapd = math.sqrt(2.0 * E_apd / Capd)
 
@@ -162,10 +159,15 @@ def run_simulation(cfg: SweepConfig, sp: SystemParams = None,
 
         # Iq from electrical power command:
         # Pavg = 1.5 * (Rs*Iq + Vemf_q) * Iq
-        # APD losses are a DC-link burden (drawn from capacitor), not motor burden
+        # Scale power target by voltage margin ratio (Vdc-dependent):
+        # When Vdc is high, full power; when Vdc sags, reduce power to match
+        # available voltage headroom. This models the FOC outer voltage loop.
+        Vmargin_nom = sp.m_limit * cfg.Vnom / math.sqrt(3.0) - Vemf_q
+        Vmargin_ratio = max(0.0, Vmargin / Vmargin_nom) if Vmargin_nom > 0.01 else 0.0
+        Ptarget = Pavg * min(1.0, Vmargin_ratio)
         a_q = 1.5 * motor.Rs
         b_q = 1.5 * Vemf_q
-        disc = b_q * b_q + 4.0 * a_q * Pavg
+        disc = b_q * b_q + 4.0 * a_q * Ptarget
         Iq_cmd = (-b_q + math.sqrt(disc)) / (2.0 * a_q) if disc > 0 and a_q > 0.01 else 0.0
 
         # Voltage limit: Vq = Rs*Iq + Vemf_q <= Vlim
@@ -179,7 +181,7 @@ def run_simulation(cfg: SweepConfig, sp: SystemParams = None,
         Iq_cmd = min(Iq_cmd, motor.I_rated)
 
         # Track if voltage-limited (compared to unrated Iq from power command)
-        Iq_unrated = (-b_q + math.sqrt(b_q * b_q + 4.0 * a_q * Pavg)) / (2.0 * a_q) if disc > 0 and a_q > 0.01 else 0.0
+        Iq_unrated = (-b_q + math.sqrt(b_q * b_q + 4.0 * a_q * Ptarget)) / (2.0 * a_q) if disc > 0 and a_q > 0.01 else 0.0
         if Iq_cmd < Iq_unrated - 0.01:
             n_iq_limited += 1
 
@@ -191,7 +193,9 @@ def run_simulation(cfg: SweepConfig, sp: SystemParams = None,
         Pmotor = 1.5 * Vq * Iq_cmd
 
         # ── 5. DC-link cumulative energy ──────────────────────────
-        dEdc = (Pin - Pmotor - Papd_actual) * dt
+        # Papd_buf: zero-mean APD exchange (absorb<0, release>0)
+        # Ploss: APD switching/conduction losses (always drains DC-link)
+        dEdc = (Pin - Pmotor - Papd_buf - Ploss) * dt
         E_dc_cumul += dEdc
         E_dc_cumul = max(E_dc_cumul, 0.0)
         Vdc = math.sqrt(2.0 * E_dc_cumul / Cdc)
@@ -206,7 +210,7 @@ def run_simulation(cfg: SweepConfig, sp: SystemParams = None,
         torque_arr.append(Te_total)
         sum_pin += Pin * dt
         sum_pmotor += Pmotor * dt
-        sum_papd += Papd_actual * dt
+        sum_papd += Papd_buf * dt  # zero-mean APD exchange
 
     # ── Analysis (skip first 40%) ────────────────────────────────
     s = int(N * 0.4)

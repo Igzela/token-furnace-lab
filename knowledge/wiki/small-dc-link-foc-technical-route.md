@@ -101,7 +101,7 @@ Technical roadmap for 22µF DC-link + sensorless FOC + water pump + TMS320F28035
 | derivation-002 | energy balance | COMPLETE | 85/100 | Torque ripple binding, 300W needs APD, GPT final: rated-torque distinction |
 | derivation-003 | FOC voltage envelope | COMPLETE | 82/100 | ψ_f≤0.103, 300W needs ≥6632rpm, high-line 240W limit |
 | derivation-004 | APD sizing | COMPLETE | 78/100 | 16µF/500V H-bridge, 90% decoupling enables 300W |
-| derivation-005 | joint simulation | LOCAL_PASS_NEEDS_GPT_FINAL | 88/100 | Corrected sweep reports 336/486 pass and 66/162 300W pass; GPT final pending |
+| derivation-005 | joint simulation | COMPLETE | 86/100 | GPT final: PASS_WITH_NOTES. 300W conditionally feasible (44% pass). Recommended baseline: 22µF+22µF/500V APD, robust=200W, stretch=300W |
 | phase-a-001 | FOC design | COMPLETE | - | F28035 budget OK, modules defined |
 | phase-a-002 | FOC interface | PENDING | - | Parallel: interface design only, no implementation |
 | phase-a-003 | FOC hw test | PENDING | - | Next: validate on 1360µF hardware |
@@ -119,5 +119,5 @@ Technical roadmap for 22µF DC-link + sensorless FOC + water pump + TMS320F28035
 - E4: derivation-004 — APD sizing (score 78/100, PASS_WITH_TWO_CORRECTIONS)
 - E4-final: derivation-004 GPT verification — C_apd factor-of-2 correction, torque ripple conclusion corrected
 - E5: phase-a-001 — FOC baseline design (COMPLETE)
-- E5b: derivation-005 — Joint simulation (88/100 LOCAL_PASS_NEEDS_GPT_FINAL)
-- E5b-review: GPT rejected the first model conclusion and requested model fixes; regenerated sweep is local PASS candidate pending GPT final
+- E5b: derivation-005 — Joint simulation (86/100 PASS_WITH_NOTES, COMPLETE)
+- E5b-final: GPT final verification — PASS_WITH_NOTES, 300W conditionally feasible, recommended baseline 22µF+22µF/500V APD
