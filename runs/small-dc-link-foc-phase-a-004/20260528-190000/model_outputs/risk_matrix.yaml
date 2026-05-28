@@ -1,157 +1,139 @@
-# Risk Matrix — Phase A-004
+# Risk Matrix — Phase A-004 (v2 — corrected)
 # Fixed-Point CPU/RAM Budget and Overflow Audit
 
 # --- HIGH Risk Items ---
 high_risk:
   - id: R001
-    area: SMO_cycle_count
+    area: theta_prediction_accuracy
     description: >
-      SMO observer estimated at 3500 cycles but actual C28x implementation
-      may be 20-50% higher due to: (1) compiler-generated overhead for
-      conditional branches, (2) Flash wait states on code fetch, (3) memory
-      access alignment penalties. If SMO exceeds 5000 cycles, ISR headroom
-      drops below 30%.
-    impact: ISR budget violation → must reduce SMO complexity or lower ISR frequency
-    likelihood: medium
+      Two-layer observer introduces prediction error. At 5kHz SMO rate, the
+      10kHz ISR uses predicted angle. Maximum error: ω × Ts_SMO. At 4000rpm:
+      419 rad/s × 200µs = 0.084 rad = 4.8° electrical. This is within FOC
+      tolerance (±5-10°) but must be verified in simulation.
+    impact: Torque ripple if prediction error exceeds FOC tolerance
+    likelihood: low
     mitigation:
-      - Profile actual SMO on C28x target (not estimated)
-      - Pre-optimization: use IQmath library functions (hand-optimized assembly)
-      - Contingency: reduce SMO to half-order (remove β-axis observer)
-    verification: "Run ISR timing test with GPIO toggle + oscilloscope"
+      - Verify prediction error in MATLAB/Simulink or host simulation
+      - If error too high, increase SMO rate to 10kHz (requires SMO optimization to fit 6000-cycle budget)
+      - Fallback: 3kHz SMO (333µs period, 1.87° error at 4000rpm)
+    verification: "Simulate FOC with 5kHz SMO, measure torque ripple"
     status: open
 
   - id: R002
-    area: ISR_frequency_conflict
+    area: fast_ISR_budget_6000
     description: >
-      Speed loop and APD loop both want 1kHz. If both run in same ISR tick,
-      total ISR time reaches 11,250 cycles (25% headroom). If Flash wait
-      states increase to 3 WS, headroom drops to 20%.
-    impact: ISR overrun → missed PWM cycle → current spike → potential OC trip
-    likelihood: low
+      v1 used wrong ISR budget (15000 instead of 6000). v2 redesigned with
+      two-layer observer. Fast ISR estimated at 2650 cycles (44%). Must be
+      profiled on actual C28x to confirm.
+    impact: ISR overrun → missed PWM cycle → current spike → OC trip
+    likelihood: medium
     mitigation:
-      - Alternate speed/APD at 500Hz each (sufficient for both)
-      - If needed, run APD at 100Hz (energy loop is slow)
-      - Copy ISR-critical code to RAM for 0 WS
-    verification: "Profile ISR time with alternating schedule"
+      - Profile fast ISR on C28x target with GPIO toggle
+      - Target: ≤ 4200 cycles (70% of 6000)
+      - If exceeded: merge PI functions, LUT-ize SVPWM, or drop to 5kHz
+    verification: "GPIO toggle around fast ISR, oscilloscope measurement"
     status: open
 
 # --- MEDIUM Risk Items ---
 medium_risk:
   - id: R003
-    area: PI_integrator_precision
+    area: SMO_cycle_count_unverified
     description: >
-      PI integral terms in Q15 with Ki ≈ 0.001-0.01. At 10kHz, integral
-      accumulates 10000 × 0.001 = 10 LSBs per second. Over 10 seconds,
-      integral reaches 100 LSBs (0.3% of range). Precision loss is minimal
-      but anti-windup clamp must be verified.
-    impact: Slow integral drift → steady-state error → motor doesn't reach target
-    likelihood: low
+      SMO at 3500 cycles is estimated. Actual C28x implementation may differ.
+      If SMO exceeds 5000 cycles at 5kHz, headroom drops but ISR is not
+      affected (SMO runs in separate task).
+    impact: SMO task overrun → delayed angle update → prediction drift
+    likelihood: medium
     mitigation:
-      - Verify anti-windup clamp value matches Q15 range
-      - Test with step response: verify no overshoot > 5%
-      - Consider Q12 for gains if Ki < 0.001
-    verification: "Simulate step response with Q15 arithmetic"
+      - Profile SMO on C28x target
+      - If > 5000 cycles: optimize angle extraction (CORDIC vs LUT)
+      - Worst case: drop SMO to 3kHz (still acceptable for FOC)
+    verification: "Profile SMO separately from fast ISR"
     status: open
 
   - id: R004
-    area: Quarter_wave_LUT_accuracy
+    area: PI_integrator_precision
     description: >
-      Quarter-wave sin/cos LUT (128 entries) with interpolation gives ~16-bit
-      accuracy. Without interpolation, error is 0.12% (1 LSB at Q15). This
-      affects Park/Inverse Park accuracy and torque ripple.
-    impact: Torque ripple → audible noise → efficiency loss
-    likelihood: medium
+      PI integral terms in Q15 with Ki ≈ 0.001-0.01. Anti-windup clamp is
+      mandatory, not optional.
+    impact: Integral windup → overshoot → potential OC trip
+    likelihood: low
     mitigation:
-      - Use 256-entry full LUT (1KB) for simplicity
-      - Or use 128-entry quarter-wave + linear interpolation (standard C28x approach)
-      - Verify max torque ripple < 1% with LUT accuracy
-    verification: "Compare LUT sin/cos vs float math for 360 angle steps"
+      - Anti-windup clamp on all PI instances (non-negotiable)
+      - Verify clamp value matches Q15 range
+      - Per-unit internal representation recommended
+    verification: "Step response simulation with Q15 arithmetic"
     status: open
 
 # --- LOW Risk Items ---
 low_risk:
   - id: R005
-    area: Trace_buffer_size
+    area: Trace_buffer_RAM
     description: >
-      2KB trace buffer is 17% of total RAM. If RAM pressure increases
-      (e.g., adding communication protocol), trace buffer can be reduced.
-    impact: Debug/trace capability reduced → harder to diagnose field issues
+      2KB trace buffer is 17% of 12KB RAM. Must be conditional compilation.
+    impact: RAM pressure in production build
     likelihood: low
     mitigation:
-      - Reduce to 1KB trace buffer if needed
-      - Use hardware trace (C28x has embedded trace buffer)
-    verification: "Monitor RAM usage in final build"
+      - #define ENABLE_TRACE_BUFFER 0 for production
+      - Reduce to 1KB if needed
+    verification: "Check linker map with trace disabled"
     status: open
 
   - id: R006
     area: Stack_depth
     description: >
-      512B stack assumed. Deep call chain: main → ISR → SMO → atan2 → LUT.
-      Static analysis or run-time canary needed to verify.
-    impact: Stack overflow → data corruption → undefined behavior
+      512B stack assumed. Needs verification via static analysis or canary.
+    impact: Stack overflow → data corruption
     likelihood: low
     mitigation:
-      - Use C28x `.stack` directive to place stack in known RAM section
-      - Add stack canary (write sentinel value, check in background task)
-      - Run static stack analysis tool (TI provides StackAnalyzer)
-    verification: "Place 0xDEAD sentinel at stack bottom, check in diagnostics"
+      - C28x StackAnalyzer tool
+      - Runtime canary in background task
+    verification: "Place sentinel at stack bottom, check in diagnostics"
     status: open
 
   - id: R007
-    area: Flash_wait_states
+    area: Linker_memory_map
     description: >
-      At 60MHz CPU clock, Flash access requires 0-3 wait states depending
-      on address. ISR code in Flash may incur 1-2 WS, adding 5-10% to
-      cycle counts.
-    impact: ISR time increases by 5-10% → headroom reduced but still safe
-    likelihood: high
+      RAM budget assumes total 12KB is contiguous. F28035 has separate SARAM
+      blocks (M0, M1, D0, D1). Must verify sections fit in their assigned blocks.
+    impact: Linker error or section overlap
+    likelihood: low
     mitigation:
-      - Copy time-critical ISR code to RAM at boot (`. ramfunc` section)
-      - Or accept 1-2 WS and budget for it in cycle estimates
-    verification: "Profile ISR time with code in Flash vs RAM"
+      - Create linker command file (.cmd) with explicit section placement
+      - Verify .stack, .ebss, .econst, IQmath tables fit in assigned RAM
+    verification: "Build with linker map, verify no section overflow"
     status: open
 
 # --- DEFERRED Items ---
 deferred:
   - id: D001
     area: APD_current_loop_rate
-    description: >
-      APD current loop rate (10kHz vs 20kHz) not yet determined. Affects
-      APD control quality and ISR budget.
-    resolution: "Determine in Phase A-005 implementation when hardware constraints are known."
+    description: "APD current loop rate (10kHz vs 20kHz) not determined."
+    resolution: "Determine in Phase A-005 when hardware constraints are known."
     status: deferred
 
   - id: D002
-    area: Multi_rate_ADC
+    area: Per_unit_representation
     description: >
-      ADC sampling at 10kHz for current, but Vdc/temperature can be sampled
-      at 1kHz. Not a CPU issue but affects ADC configuration.
-    resolution: "Configure ADC SOC for multi-channel sampling in Phase A-005."
-    status: deferred
-
-  - id: D003
-    area: Communication_overhead
-    description: >
-      SPI/UART for host communication not budgeted in ISR. Background task
-      only. If real-time telemetry needed, must add to 1kHz task.
-    resolution: "Define communication protocol in Phase A-005, add to scheduler if needed."
+      GPT recommended per-unit (V_pu, I_pu, ω_pu) for all internal arithmetic.
+      This simplifies Q-format management but requires base value definitions.
+    resolution: "Implement in Phase A-005 implementation skeleton."
     status: deferred
 
 # --- Summary ---
 summary:
-  total_risks: 10
+  total_risks: 9
   high: 2
   medium: 2
   low: 3
-  deferred: 3
+  deferred: 2
   verdict: PASS_WITH_NOTES
   notes: >
-    Two HIGH risks identified: SMO cycle count uncertainty and ISR frequency
-    conflict. Both have clear mitigations and are not blocking. The SMO risk
-    is the most important — it must be profiled on actual hardware before
-    committing to 10kHz ISR. All RAM and fixed-point risks are LOW with
-    standard mitigations.
+    v2 corrected the fundamental ISR budget error (6000 cycles, not 15000).
+    Two-layer observer design brings fast ISR to 2650 cycles (44% utilization).
+    Two HIGH risks remain: theta prediction accuracy and fast ISR profiling.
+    Both require hardware measurement to close. RAM budget unchanged (PASS_WITH_NOTES).
   recommendation: >
-    Proceed to Phase A-005 (implementation skeleton) with the understanding
-    that SMO profiling on C28x is the first validation gate. If SMO exceeds
-    5000 cycles, switch to reduced-order observer before integration.
+    Proceed to Phase A-005 with two-layer observer design. First validation gate:
+    profile fast ISR on C28x, confirm ≤ 4200 cycles. Second gate: simulate
+    5kHz SMO prediction error, confirm ≤ 5° at 4000rpm.

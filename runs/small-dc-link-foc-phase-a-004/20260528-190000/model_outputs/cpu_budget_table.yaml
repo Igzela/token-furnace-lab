@@ -1,19 +1,22 @@
-# CPU Budget Table — Phase A-004
+# CPU Budget Table — Phase A-004 (v2 — corrected)
 # TMS320F28035 @ 60MHz, 150 MIPS peak
-# ISR budget: 10kHz → 15,000 cycles per iteration
-# All cycle counts are estimated for C28x fixed-point (IQmath)
+# ISR budget: 10kHz → 6,000 cycles per iteration
+# GPT review found v1 used wrong budget (15000 instead of 6000)
+# v2 uses two-layer observer to fit within budget
 
 target:
   mcu: TMS320F28035
   clock_mhz: 60
   peak_mips: 150
   isr_freq_hz: 10000
-  cycles_per_isr: 15000
+  cycles_per_isr: 6000
 
-# --- 10kHz Current ISR Modules ---
-current_isr:
-  total_cycles: 8850
-  headroom_pct: 41
+# --- 10kHz Fast ISR (current loop only) ---
+fast_isr:
+  total_cycles: 2650
+  budget: 6000
+  headroom_pct: 56
+  target_pct: 70  # 4200 cycles max per GPT recommendation
   modules:
     - name: ADC_read_calibrate
       cycles: 300
@@ -25,9 +28,9 @@ current_isr:
       notes: "Ia, Ib → Iα, Iβ. 2 multiplies + 1 subtract. Q15 multiply = 1 cycle on C28x MPY instruction."
       risk: low
 
-    - name: theta_source_mux
-      cycles: 80
-      notes: "Select observer vs open-loop vs frozen theta. Branch + register move."
+    - name: theta_predict
+      cycles: 50
+      notes: "Angle prediction: θ += ω_hat × Ts. 1 multiply + 1 add. Uses last SMO estimate. NO full observer update."
       risk: low
 
     - name: Park_transform
@@ -57,13 +60,8 @@ current_isr:
 
     - name: SVPWM
       cycles: 600
-      notes: "Sector determination (6 comparisons) + duty calculation (6 multiplies + 6 adds) + dead-time compensation. Most complex module."
-      risk: medium
-
-    - name: SMO_observer
-      cycles: 3500
-      notes: "Sliding mode observer: 2 current model evaluations + sign function + low-pass filter + angle extraction. Dominant ISR cost. Includes: 8 multiplies, 4 adds, 2 divisions (or reciprocal), 2 LPF (1 multiply + 1 add each), angle atan2 approximation (CORDIC or LUT, ~200 cycles)."
-      risk: high
+      notes: "Sector determination (6 comparisons) + duty calculation (6 multiplies + 6 adds) + dead-time compensation."
+      risk: low
 
     - name: Fast_fault_checks
       cycles: 400
@@ -71,25 +69,68 @@ current_isr:
       risk: low
 
     - name: Trace_logging
-      cycles: 200
-      notes: "Circular buffer write (2-4 samples). Pointer increment + conditional branch. Minimal in ISR."
+      cycles: 80
+      notes: "Minimal circular buffer write (1-2 samples). Only on trigger events."
       risk: low
 
     - name: ISR_overhead
-      cycles: 500
-      notes: "Context save/restore (12 registers ~12 cycles) + pipeline stalls + interrupt latency (~12 cycles) + compiler-generated prologue/epilogue. Estimated 3-5% overhead on total."
+      cycles: 250
+      notes: "Context save/restore + pipeline stalls + interrupt latency. ~5% of budget."
       risk: low
 
     - name: Misc_overhead
-      cycles: 300
-      notes: "Compiler spills, alignment padding, branch mispredictions, memory wait states (Flash 0-3 WS depending on clock ratio)."
+      cycles: 50
+      notes: "Compiler spills, alignment padding, branch mispredictions."
       risk: low
 
-# --- 1kHz Speed Loop ---
+# --- 5kHz Medium Task (SMO observer update) ---
+smo_task:
+  total_cycles: 3500
+  freq_hz: 5000
+  budget: 12000  # 60MHz / 5kHz
+  headroom_pct: 71
+  notes: >
+    SMO full update runs at 5kHz (every other ISR tick). Provides corrected
+    θ_hat and ω_hat to the 10kHz fast ISR via shared memory. The fast ISR
+    uses predicted θ between SMO updates.
+  modules:
+    - name: SMO_current_model
+      cycles: 800
+      notes: "2 current model evaluations (α and β axes). 4 multiplies + 2 adds + 2 subtractions."
+      risk: medium
+
+    - name: SMO_sign_function
+      cycles: 100
+      notes: "Sliding mode sign function: sign(i_hat - i). 2 comparisons."
+      risk: low
+
+    - name: SMO_low_pass_filter
+      cycles: 400
+      notes: "2 first-order IIR filters (α and β). 2 multiplies + 2 adds each = 4 multiplies + 4 adds total."
+      risk: low
+
+    - name: SMO_angle_extraction
+      cycles: 800
+      notes: "atan2(zβ, zα) via LUT + interpolation or CORDIC. 2 table lookups + 1 interpolation + 1 quadrant logic."
+      risk: medium
+
+    - name: SMO_speed_estimation
+      cycles: 300
+      notes: "ω_hat from angle derivative + LPF. 1 subtract + 1 multiply + 1 LPF."
+      risk: low
+
+    - name: SMO_overhead
+      cycles: 200
+      notes: "Branch logic, register moves, Q-format scaling."
+      risk: low
+
+# --- 1kHz Slow Tasks ---
 speed_loop:
-  total_cycles: 2500
+  total_cycles: 1500
   freq_hz: 1000
-  notes: "Runs every 10th ISR tick. Budget is per-invocation."
+  budget: 60000
+  headroom_pct: 97
+  notes: "Runs every 6th ISR tick (alternating with APD). Budget is per-invocation."
   modules:
     - name: Speed_PI
       cycles: 300
@@ -98,12 +139,12 @@ speed_loop:
 
     - name: Speed_ramp
       cycles: 100
-      notes: "Linear ramp with slope limiter. 1 comparison + 1 conditional increment."
+      notes: "Linear ramp with slope limiter."
       risk: low
 
     - name: Startup_SM
       cycles: 400
-      notes: "State machine: IDLE → PRECHARGE → ALIGN → I_F_RAMP → FOC_NORMAL. Timer checks + state transitions."
+      notes: "State machine: IDLE → PRECHARGE → ALIGN → I_F_RAMP → FOC_NORMAL."
       risk: low
 
     - name: Observer_dwell
@@ -113,38 +154,39 @@ speed_loop:
 
     - name: Derating_policy
       cycles: 300
-      notes: "Vdc derating, temperature derating, APD derating. Multi-condition evaluation."
+      notes: "Vdc derating, temperature derating, APD derating."
       risk: low
 
     - name: Misc_1kHz
       cycles: 200
-      notes: "Overhead, compiler, memory access."
+      notes: "Overhead."
       risk: low
 
-# --- APD Control Loop ---
 apd_control:
-  total_cycles: 3000
+  total_cycles: 2200
   freq_hz: 1000
-  notes: "Runs at 1kHz. APD H-bridge current control at 20kHz PWM, but energy loop at 1kHz."
+  budget: 60000
+  headroom_pct: 96
+  notes: "Runs at 1kHz on alternate ticks from speed loop."
   modules:
     - name: Power_feedforward
       cycles: 400
-      notes: "P_estimate = Vdc * Idc. 1 multiply + 1 LPF. Feedforward for APD current reference."
+      notes: "P_estimate = Vdc × Idc. 1 multiply + 1 LPF."
       risk: low
 
     - name: APD_energy_loop
       cycles: 800
-      notes: "Capacitor energy: E = 0.5 * C * Vdc^2. PI controller for energy balance. 2 multiplies (C*V^2) + PI."
+      notes: "Capacitor energy: E = 0.5 × C × Vdc². PI controller. Vdc² via LUT to avoid runtime square."
       risk: medium
 
     - name: APD_current_ref
       cycles: 600
-      notes: "Energy loop output → current reference → hysteresis or PI current control. Includes LUT for power waveform."
-      risk: medium
+      notes: "Energy loop output → current reference → PI current control."
+      risk: low
 
     - name: APD_fault_check
       cycles: 200
-      notes: "APD overcurrent, capacitor OV, H-bridge fault detection."
+      notes: "APD overcurrent, capacitor OV detection."
       risk: low
 
     - name: Misc_APD
@@ -156,11 +198,11 @@ apd_control:
 background:
   total_cycles: 500
   freq_hz: 100
-  notes: "Runs at 100Hz or when ISR is idle. Can be preempted."
+  notes: "Runs at 100Hz or when ISR is idle."
   modules:
     - name: Diagnostics
       cycles: 200
-      notes: "Fault log, uptime counter, communication status."
+      notes: "Fault log, uptime counter."
       risk: low
 
     - name: Synthesis_logs
@@ -175,20 +217,25 @@ background:
 
 # --- Summary ---
 summary:
-  isr_budget: 15000
-  isr_used: 8850
-  isr_headroom: 6150
-  headroom_pct: 41
+  isr_budget: 6000
+  fast_isr_used: 2650
+  fast_isr_headroom: 3350
+  fast_isr_headroom_pct: 56
+  fast_isr_target_pct: 70  # GPT recommendation: ≤4200 cycles
   verdict: PASS
   notes: >
-    ISR headroom of 41% is healthy. The dominant cost is SMO at 3500 cycles (23% of budget).
-    If SMO needs optimization, consider: (1) reduced-order observer, (2) lookup table for
-    atan2, (3) integer-only arithmetic. SVPWM at 600 cycles is well within budget.
-    Speed loop and APD loop share 1kHz and don't compete with ISR.
+    Two-layer observer design: fast ISR (10kHz) uses angle prediction,
+    SMO full update runs at 5kHz. Fast ISR uses 2650/6000 cycles (44% utilization),
+    well under the 70% safety target (4200 cycles). SMO at 5kHz has 71% headroom.
+  design_changes_from_v1:
+    - ISR budget corrected: 6000 (not 15000) for 60MHz @ 10kHz
+    - SMO moved from 10kHz ISR to 5kHz separate task
+    - Two-layer observer: fast prediction (10kHz) + slow correction (5kHz)
+    - Fast ISR reduced from 8850 to 2650 cycles (70% reduction)
   risk_areas:
-    - module: SMO_observer
-      risk: high
-      mitigation: "Profile actual C28x assembly; consider reduced-order observer or CORDIC hardware"
-    - module: SVPWM
+    - module: SMO_angle_extraction
       risk: medium
-      mitigation: "Standard implementation, verify with compiler optimization level 2+"
+      mitigation: "Profile LUT vs CORDIC; LUT is preferred for determinism"
+    - module: theta_prediction_accuracy
+      risk: medium
+      mitigation: "At 5kHz SMO rate, prediction error at 10kHz is ω×Ts/2. At 4000rpm: ~0.04 rad error. Verify acceptable for FOC."
