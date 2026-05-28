@@ -1,0 +1,8 @@
+run_id: 20260528-101549
+task_id: foc_fault_recovery_review
+overall_verdict: PASS
+subproblems: {}
+budget:
+  iterations: 0
+  wall_seconds: 0.0
+generated_at: '2026-05-28T10:23:50'

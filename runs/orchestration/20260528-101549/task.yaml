@@ -1,0 +1,57 @@
+task_id: foc_fault_recovery_review
+title: Review Phase E-001 Runtime Fault Recovery Model
+objective: 'Review the Phase E-001 fault recovery model for the 22uF DC-link sensorless
+  FOC water pump drive and produce corrected implementation guidance.
+
+  '
+allowed_paths:
+- runs/orchestration/
+- runs/small-dc-link-foc-phase-e-001/
+- knowledge/wiki/
+- docs/design/
+forbidden_paths:
+- .env
+- secrets/
+- credentials/
+score_min: 70
+max_repair_rounds: 2
+max_iterations: 3
+subproblems:
+- id: e001_review
+  title: Review runtime fault recovery model
+  agent: implementer
+  subagent_type: Plan
+  artifact_path: artifacts/e001_fault_recovery_review.md
+  review_path: reviews/e001_gpt_review.md
+  required_sections:
+  - Score
+  - Verdict
+  - Findings
+  - Corrections
+  - Final Recommendation
+  prompt: 'Review the Phase E-001 runtime fault recovery model for a sensorless FOC
+
+    water pump drive (22uF DC-link, TMS320F28035).
+
+
+    The model is at: runs/small-dc-link-foc-phase-e-001/20260528-130000/model_outputs/fault_recovery_model.md
+
+
+    Produce a structured artifact with Score, Verdict, Findings, Corrections, and
+    Final Recommendation.
+
+
+    Focus on:
+
+    1. Are all critical fault paths covered?
+
+    2. Are timing constants reasonable?
+
+    3. Is the restart logic correct?
+
+    4. Are there safety gaps?
+
+
+    The artifact must include evidence-backed claims.
+
+    '

@@ -1,0 +1,7 @@
+status: ACCEPT
+round: 1
+score: 82
+verdict: PASS_WITH_NOTES
+blocking_findings: 0
+reason: Score 82, verdict PASS_WITH_NOTES
+next_action: done

@@ -384,9 +384,10 @@ def dispatch_review(mode: str, task: Dict, sub: Dict, artifact_path: Path, run_d
 # --- Review parsing ---
 
 def parse_review(text: str) -> Review:
-    score_match = re.search(r"Score\s*:\s*(\d{1,3})", text)
-    verdict_match = re.search(r"Verdict\s*:\s*(PASS_WITH_NOTES|PASS|FAIL)", text)
-    conf_match = re.search(r"Confidence\s*:\s*(HIGH|MEDIUM|LOW)", text)
+    # Handle both "Score: 82" and "## Score\n**82 / 100**" formats
+    score_match = re.search(r"Score\s*[:*]*\s*\*{0,2}(\d{1,3})", text)
+    verdict_match = re.search(r"Verdict\s*[:*]*\s*\*{0,2}(PASS_WITH_NOTES|PASS|FAIL)", text)
+    conf_match = re.search(r"Confidence\s*[:*]*\s*\*{0,2}(HIGH|MEDIUM|LOW)", text)
     final_match = re.search(r"Final Recommendation\s*\n+\s*(\w+)", text)
 
     score = int(score_match.group(1)) if score_match else 0
