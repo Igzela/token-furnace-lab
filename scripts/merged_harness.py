@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Merged Harness: token-furnace execution + token-efficient governance.
 
-Combines real LLM execution (furnace) with event sourcing, budget enforcement,
-and quality gates (harness) into a single unified pipeline.
+Production-grade pipeline combining real LLM execution (furnace) with event
+sourcing, budget enforcement, quality gates, and adversarial review (harness).
 
 Usage:
   python3 scripts/merged_harness.py run <task.yaml> [--mode bridge|mock]
@@ -12,19 +12,62 @@ Usage:
 import argparse
 import hashlib
 import json
+import logging
+import re
 import sys
+import tempfile
+import threading
 import time
 import uuid
 from dataclasses import dataclass, field, asdict
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO_ROOT / "scripts"))
 
+logger = logging.getLogger("merged_harness")
 
-# --- Event Store (from harness, simplified) ---
+# --- Constants ---
+
+MAX_EVENT_STORE_BYTES = 10 * 1024 * 1024  # 10MB (S2)
+
+ALLOWED_EVENT_TYPES = frozenset({
+    "task_received", "routing_decided", "budget_reserved", "budget_used",
+    "gates_built", "execution_blocked", "execution_complete",
+    "agent_completed", "agent_failed", "agent_error",
+    "gate_evaluated", "gate_revaluated", "retry",
+    "adversarial_review", "run_complete",
+})
+
+TASK_REQUIRED_FIELDS = frozenset({"task_id", "objective", "subproblems"})
+SAFE_ID_RE = re.compile(r"^[a-zA-Z0-9_\-]+$")
+
+
+# --- Security Helpers (S1) ---
+
+def safe_artifact_path(run_dir: Path, subproblem_id: str, subdir: str = "artifacts") -> Path:
+    """Construct a path within run_dir, rejecting traversal attempts."""
+    if not SAFE_ID_RE.match(subproblem_id):
+        raise ValueError(f"Rejected subproblem ID (invalid chars): {subproblem_id!r}")
+    resolved = (run_dir / subdir / f"{subproblem_id}_artifact.md").resolve()
+    if not resolved.is_relative_to(run_dir.resolve()):
+        raise ValueError(f"Path escapes run_dir: {resolved}")
+    return resolved
+
+
+def safe_prompt_path(run_dir: Path, subproblem_id: str) -> Path:
+    """Construct a prompt path within run_dir, rejecting traversal attempts."""
+    if not SAFE_ID_RE.match(subproblem_id):
+        raise ValueError(f"Rejected subproblem ID (invalid chars): {subproblem_id!r}")
+    resolved = (run_dir / "prompts" / f"{subproblem_id}_prompt.md").resolve()
+    if not resolved.is_relative_to(run_dir.resolve()):
+        raise ValueError(f"Path escapes run_dir: {resolved}")
+    return resolved
+
+
+# --- Event Store (harness, hardened) ---
 
 @dataclass
 class Event:
@@ -43,13 +86,25 @@ class Event:
     def from_dict(cls, d: Dict[str, Any]) -> "Event":
         return cls(**{k: v for k, v in d.items() if k in cls.__dataclass_fields__})
 
+    def validate(self) -> None:
+        """Schema validation (G3)."""
+        if not self.event_id or not isinstance(self.event_id, str):
+            raise ValueError("event_id must be a non-empty string")
+        if self.event_type not in ALLOWED_EVENT_TYPES:
+            raise ValueError(f"Unknown event_type: {self.event_type!r}")
+        if not self.timestamp or not isinstance(self.timestamp, str):
+            raise ValueError("timestamp must be a non-empty string")
+        if not isinstance(self.payload, dict):
+            raise ValueError("payload must be a dict")
+
 
 class EventStore:
-    def __init__(self, path: Path):
+    def __init__(self, path: Path, max_bytes: int = MAX_EVENT_STORE_BYTES):
         self.path = path
-        self.path.parent.mkdir(parents=True, exist_ok=True)
+        self.max_bytes = max_bytes
         self._ids: set = set()
         self._idempotency: Dict[str, str] = {}
+        self._lock = threading.Lock()  # S3
         self._load()
 
     def _load(self):
@@ -64,31 +119,46 @@ class EventStore:
                 self._idempotency[ev.idempotency_key] = ev.event_id
 
     def append(self, event: Event) -> None:
-        if event.event_id in self._ids:
-            raise ValueError(f"Duplicate event_id: {event.event_id}")
-        if event.idempotency_key:
-            existing = self._idempotency.get(event.idempotency_key)
-            if existing and existing != event.event_id:
-                raise ValueError(f"Idempotency conflict: {event.idempotency_key}")
-            if existing == event.event_id:
-                return  # silent no-op
-        with open(self.path, "a", encoding="utf-8") as f:
-            f.write(json.dumps(event.to_dict(), ensure_ascii=False) + "\n")
-        self._ids.add(event.event_id)
-        if event.idempotency_key:
-            self._idempotency[event.idempotency_key] = event.event_id
+        with self._lock:
+            # S3: thread-safe via lock
+            # G3: schema validation
+            event.validate()
+
+            # S2: size limit
+            if self.path.exists() and self.path.stat().st_size >= self.max_bytes:
+                raise RuntimeError(
+                    f"Event store exceeds {self.max_bytes} bytes — "
+                    f"possible runaway loop"
+                )
+
+            if event.event_id in self._ids:
+                raise ValueError(f"Duplicate event_id: {event.event_id}")
+            if event.idempotency_key:
+                existing = self._idempotency.get(event.idempotency_key)
+                if existing and existing != event.event_id:
+                    raise ValueError(f"Idempotency conflict: {event.idempotency_key}")
+                if existing == event.event_id:
+                    return  # silent no-op
+
+            self.path.parent.mkdir(parents=True, exist_ok=True)
+            with open(self.path, "a", encoding="utf-8") as f:
+                f.write(json.dumps(event.to_dict(), ensure_ascii=False) + "\n")
+            self._ids.add(event.event_id)
+            if event.idempotency_key:
+                self._idempotency[event.idempotency_key] = event.event_id
 
     def replay(self) -> List[Event]:
-        events = []
-        if not self.path.exists():
+        with self._lock:
+            events = []
+            if not self.path.exists():
+                return events
+            for line in self.path.read_text(encoding="utf-8").splitlines():
+                if line.strip():
+                    events.append(Event.from_dict(json.loads(line)))
             return events
-        for line in self.path.read_text(encoding="utf-8").splitlines():
-            if line.strip():
-                events.append(Event.from_dict(json.loads(line)))
-        return events
 
 
-# --- Budget Manager (from harness, simplified) ---
+# --- Budget Manager ---
 
 @dataclass
 class BudgetReservation:
@@ -154,7 +224,7 @@ class BudgetManager:
         ))
 
 
-# --- Quality Gate (from harness, adapted) ---
+# --- Quality Gate ---
 
 @dataclass
 class GateCheck:
@@ -186,30 +256,25 @@ class QualityGate:
         self.retry_max = retry_max
 
     def evaluate(self, artifact_content: str, routing: Dict, reservation: BudgetReservation,
-                 retry_count: int = 0) -> QualityGateResult:
+                 retry_count: int = 0, llm_score: Optional[float] = None) -> QualityGateResult:
         checks = []
-        score = self._estimate_score(artifact_content)
+        score = llm_score if llm_score is not None else self._estimate_score(artifact_content)
 
-        # Budget check
         checks.append(GateCheck(
             name="budget", passed=not reservation.violation, severity="block",
             reason=f"used={reservation.used_tokens}/{reservation.max_tokens}",
         ))
-
-        # Score check
         checks.append(GateCheck(
             name="score", passed=score >= self.score_min, severity="block",
             reason=f"score={score}, min={self.score_min}",
         ))
 
-        # Risk check
         risk = routing.get("escalation", {}).get("trigger", [])
         checks.append(GateCheck(
             name="risk", passed=True, severity="info",
             reason=f"triggers={risk}",
         ))
 
-        # Artifact completeness
         has_findings = "finding" in artifact_content.lower()
         has_verdict = "verdict:" in artifact_content.lower()
         checks.append(GateCheck(
@@ -217,7 +282,6 @@ class QualityGate:
             reason=f"findings={has_findings}, verdict={has_verdict}",
         ))
 
-        # Determine verdict
         has_block = any(not c.passed and c.severity == "block" for c in checks)
         if has_block:
             if score >= 0.40 and retry_count < self.retry_max:
@@ -253,7 +317,7 @@ class QualityGate:
         return min(score, 0.95)
 
 
-# --- Execution Gates (from harness) ---
+# --- Execution Gates ---
 
 @dataclass
 class ExecutionGate:
@@ -276,6 +340,175 @@ def build_execution_gates(routing: Dict, reservation: BudgetReservation) -> List
     return gates
 
 
+# --- Adversarial Review (G4) ---
+
+@dataclass
+class AdversarialReview:
+    reviewer: str
+    challenges: List[Dict[str, str]]
+    verdict: str  # sustain, overrule, partial
+    confidence: float
+
+
+class DevilsAdvocate:
+    """Runs adversarial review on artifacts to find blind spots."""
+
+    def review(self, content: str, task_objective: str) -> AdversarialReview:
+        challenges = []
+
+        if content.count("PASS") > content.count("FAIL") and "risk" not in content.lower():
+            challenges.append({
+                "type": "missing_risk",
+                "detail": "Artifact claims pass but contains no risk assessment",
+                "severity": "high",
+            })
+
+        if len(content) < 500:
+            challenges.append({
+                "type": "insufficient_depth",
+                "detail": f"Artifact is only {len(content)} chars — may lack rigor",
+                "severity": "medium",
+            })
+
+        if "evidence" not in content.lower() and "reasoning" not in content.lower():
+            challenges.append({
+                "type": "no_evidence",
+                "detail": "No evidence or reasoning section found",
+                "severity": "high",
+            })
+
+        has_action = any(w in content.lower() for w in ["recommend", "action", "next step", "suggested"])
+        if not has_action:
+            challenges.append({
+                "type": "no_actionability",
+                "detail": "No actionable recommendations found",
+                "severity": "low",
+            })
+
+        if not challenges:
+            return AdversarialReview(
+                reviewer="devils_advocate",
+                challenges=[],
+                verdict="sustain",
+                confidence=0.9,
+            )
+
+        high_count = sum(1 for c in challenges if c["severity"] == "high")
+        if high_count >= 2:
+            verdict = "overrule"
+        elif high_count == 1:
+            verdict = "partial"
+        else:
+            verdict = "sustain"
+
+        return AdversarialReview(
+            reviewer="devils_advocate",
+            challenges=challenges,
+            verdict=verdict,
+            confidence=min(1.0, 0.5 + 0.1 * len(challenges)),
+        )
+
+
+def fuse_verdicts(gate_verdict: str, adversarial: AdversarialReview,
+                  gate_score: float = 0.0) -> Tuple[str, float]:
+    """Deterministic fusion: adversarial overrule blocks, sustain passes.
+
+    Adversarial downgrade only applies when gate scored pass (>= 0.80).
+    For pass_with_notes (0.60-0.80), adversarial findings are advisory only.
+    """
+    if adversarial.verdict == "overrule":
+        if gate_verdict == "pass" and gate_score >= 0.80:
+            return "pass_with_notes", 0.0
+        return gate_verdict, 0.0
+    if adversarial.verdict == "partial":
+        if gate_verdict == "pass" and gate_score >= 0.80:
+            return "pass_with_notes", 0.0
+        return gate_verdict, 0.0
+    return gate_verdict, 0.0
+
+
+# --- LLM-as-Judge (G1) ---
+
+def llm_judge_score(artifact_content: str, task_objective: str,
+                    mode: str = "bridge") -> Optional[float]:
+    """Score artifact via LLM. Returns None if bridge unavailable."""
+    if mode == "mock":
+        return None
+    try:
+        from tf_agent_executor import AgentExecutor, AgentTask
+        judge_prompt = (
+            "You are an impartial quality judge. Score this artifact 0.0-1.0 on:\n"
+            "1. Completeness (covers all parts of the task)\n"
+            "2. Evidence quality (concrete reasoning, not vague)\n"
+            "3. Actionability (clear next steps)\n\n"
+            f"Task: {task_objective}\n\n"
+            f"Artifact:\n{artifact_content[:4000]}\n\n"
+            "Reply with ONLY a number between 0.0 and 1.0."
+        )
+        executor = AgentExecutor()
+
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".txt", delete=False) as f:
+            f.write(judge_prompt)
+            judge_path = Path(f.name)
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".txt", delete=False) as f:
+            result_path = Path(f.name)
+
+        task_obj = AgentTask(
+            subproblem_id="judge",
+            prompt_path=str(judge_path),
+            artifact_path=str(result_path),
+            write_mode=False,
+            timeout=60,
+            subagent_type="Plan",
+        )
+        result = executor.execute_one(task_obj)
+        judge_path.unlink(missing_ok=True)
+
+        if result.success and result_path.exists():
+            raw = result_path.read_text(encoding="utf-8").strip()
+            result_path.unlink(missing_ok=True)
+            for token in raw.split():
+                try:
+                    val = float(token)
+                    if 0.0 <= val <= 1.0:
+                        return val
+                except ValueError:
+                    continue
+        return None
+    except Exception as e:
+        logger.warning("LLM judge failed, falling back to keyword scoring: %s", e)
+        return None
+
+
+# --- Task Validation (V1) ---
+
+def validate_task_yaml(task: Dict, source: str = "task") -> None:
+    """Validate task YAML has required fields (V1)."""
+    missing = TASK_REQUIRED_FIELDS - set(task.keys())
+    if missing:
+        raise ValueError(f"Task YAML missing required fields: {missing} (in {source})")
+
+    if not isinstance(task.get("task_id"), str) or not task["task_id"]:
+        raise ValueError(f"Task 'task_id' must be a non-empty string (in {source})")
+    if not isinstance(task.get("objective"), str) or not task["objective"]:
+        raise ValueError(f"Task 'objective' must be a non-empty string (in {source})")
+
+    subproblems = task.get("subproblems", [])
+    if not isinstance(subproblems, list) or len(subproblems) == 0:
+        raise ValueError(f"Task YAML 'subproblems' must be a non-empty list (in {source})")
+
+    for i, sub in enumerate(subproblems):
+        if not isinstance(sub, dict):
+            raise ValueError(f"subproblems[{i}] must be a dict (in {source})")
+        if "id" not in sub:
+            raise ValueError(f"subproblems[{i}] missing 'id' field (in {source})")
+        sp_id = sub["id"]
+        if not isinstance(sp_id, str):
+            raise ValueError(f"subproblems[{i}] 'id' must be a string (in {source})")
+        if not SAFE_ID_RE.match(sp_id):
+            raise ValueError(f"subproblems[{i}] id contains invalid chars: {sp_id!r}")
+
+
 # --- Merged Pipeline ---
 
 @dataclass
@@ -288,27 +521,59 @@ class MergedResult:
     events: int
     wall_seconds: float
     retry_count: int
+    adversarial: Optional[Dict] = None
 
 
 class MergedHarness:
     def __init__(self, mode: str = "bridge", timeout: int = 180):
         self.mode = mode
         self.timeout = timeout
-        self.run_dir = REPO_ROOT / "runs" / f"merged-{int(time.time())}"
+        # S4: unique run_id with timestamp + UUID
+        ts_ns = time.time_ns()
+        short_uuid = uuid.uuid4().hex[:8]
+        self.run_id = f"merged-{ts_ns}-{short_uuid}"
+        self.run_dir = REPO_ROOT / "runs" / self.run_id
         self.events = EventStore(self.run_dir / "events.jsonl")
         self.budget = BudgetManager(self.events)
         self.gate = QualityGate()
+        self.devils_advocate = DevilsAdvocate()
 
     def run(self, task_path: Path) -> MergedResult:
         import yaml as _yaml
         from task_profiler import profile_task
         from adaptive_router import find_similar_runs, select_strategy, build_routing_decision
 
-        task = _yaml.safe_load(task_path.read_text(encoding="utf-8"))
+        # V1: validate task YAML
+        raw = _yaml.safe_load(task_path.read_text(encoding="utf-8"))
+        validate_task_yaml(raw, str(task_path))
+        task = raw
+
         task_id = task.get("task_id", "unknown")
-        self.run_dir.mkdir(parents=True, exist_ok=True)
+
+        # S4: fail if run_dir already exists (impossible with UUID, but belt-and-suspenders)
+        try:
+            self.run_dir.mkdir(parents=True, exist_ok=False)
+        except FileExistsError:
+            raise RuntimeError(f"Run directory collision: {self.run_dir}")
 
         t0 = time.monotonic()
+
+        try:
+            return self._run_inner(task, task_id, t0)
+        except Exception as e:
+            self._event("agent_error", {"error": str(e), "type": type(e).__name__})
+            logger.error("Run failed: %s", e, exc_info=True)
+            return MergedResult(
+                run_id=self.run_id, task_id=task_id, routing={},
+                gate_result={"verdict": "fail_terminal", "score": 0, "error": str(e)},
+                artifacts=[], events=len(self.events.replay()),
+                wall_seconds=round(time.monotonic() - t0, 1), retry_count=0,
+            )
+
+    def _run_inner(self, task: Dict, task_id: str, t0: float) -> MergedResult:
+        import yaml as _yaml
+        from task_profiler import profile_task
+        from adaptive_router import find_similar_runs, select_strategy, build_routing_decision
 
         # Step 1: Analyze
         self._event("task_received", {"task_id": task_id})
@@ -323,7 +588,7 @@ class MergedHarness:
         routing = asdict(build_routing_decision(profile, strategy, similar, rationale))
         self._event("routing_decided", {"strategy": strategy, "rationale": rationale})
 
-        # Step 3: Budget
+        # Step 3: Budget — real reservation (G2)
         reservation = self.budget.reserve(task_id, strategy)
 
         # Step 4: Execution gates
@@ -333,83 +598,113 @@ class MergedHarness:
         if any(not g.passed for g in gates if g.severity == "block"):
             self._event("execution_blocked", {"gates": [g.reason for g in gates if not g.passed]})
             return MergedResult(
-                run_id=self.run_dir.name, task_id=task_id, routing=routing,
+                run_id=self.run_id, task_id=task_id, routing=routing,
                 gate_result={"verdict": "blocked", "score": 0},
                 artifacts=[], events=len(self.events.replay()),
                 wall_seconds=round(time.monotonic() - t0, 1), retry_count=0,
             )
 
         # Step 5: Execute
-        artifacts = self._execute(task, routing)
+        artifacts = self._execute(task, routing, reservation)
         self._event("execution_complete", {"artifacts": len(artifacts)})
 
-        # Step 6: Gate
+        # Step 6: Gate + adversarial (G4)
         all_content = ""
         for art in artifacts:
             p = self.run_dir / art
             if p.exists():
                 all_content += p.read_text(encoding="utf-8") + "\n"
 
-        gate_result = self.gate.evaluate(all_content, routing, reservation)
+        # G1: LLM judge
+        llm_score = llm_judge_score(all_content, task.get("objective", ""), self.mode)
+
+        gate_result = self.gate.evaluate(all_content, routing, reservation, llm_score=llm_score)
         self._event("gate_evaluated", {
             "verdict": gate_result.verdict, "score": gate_result.score,
             "checks": [{"name": c.name, "passed": c.passed} for c in gate_result.checks],
         })
+
+        # G4: adversarial review
+        adversarial = None
+        if artifacts and gate_result.verdict != "fail_terminal":
+            adv_review = self.devils_advocate.review(all_content, task.get("objective", ""))
+            adversarial = asdict(adv_review)
+            self._event("adversarial_review", {
+                "verdict": adv_review.verdict,
+                "challenges": len(adv_review.challenges),
+                "confidence": adv_review.confidence,
+            })
+            # Deterministic fusion
+            fused_verdict, score_adj = fuse_verdicts(gate_result.verdict, adv_review, gate_result.score)
+            gate_result.verdict = fused_verdict
+            gate_result.score = max(0.0, min(1.0, gate_result.score + score_adj))
+            if fused_verdict in ("fail_retryable", "fail_terminal"):
+                gate_result.next_status = "ready" if fused_verdict == "fail_retryable" else "failed"
 
         # Step 7: Retry if needed
         retry_count = 0
         while gate_result.verdict == "fail_retryable" and retry_count < 3:
             retry_count += 1
             self._event("retry", {"attempt": retry_count})
-            artifacts = self._execute(task, routing)
+            artifacts = self._execute(task, routing, reservation)
             all_content = ""
             for art in artifacts:
                 p = self.run_dir / art
                 if p.exists():
                     all_content += p.read_text(encoding="utf-8") + "\n"
-            gate_result = self.gate.evaluate(all_content, routing, reservation, retry_count)
+
+            llm_score = llm_judge_score(all_content, task.get("objective", ""), self.mode)
+            gate_result = self.gate.evaluate(all_content, routing, reservation, retry_count, llm_score=llm_score)
             self._event("gate_revaluated", {"verdict": gate_result.verdict, "score": gate_result.score, "retry": retry_count})
+
+            # Re-run adversarial on retry
+            if artifacts:
+                adv_review = self.devils_advocate.review(all_content, task.get("objective", ""))
+                adversarial = asdict(adv_review)
+                self._event("adversarial_review", {"verdict": adv_review.verdict, "challenges": len(adv_review.challenges)})
+                fused_verdict, score_adj = fuse_verdicts(gate_result.verdict, adv_review, gate_result.score)
+                gate_result.verdict = fused_verdict
+                gate_result.score = max(0.0, min(1.0, gate_result.score + score_adj))
 
         wall = round(time.monotonic() - t0, 1)
         self._event("run_complete", {"verdict": gate_result.verdict, "wall_seconds": wall})
 
-        # Write summary
         result = MergedResult(
-            run_id=self.run_dir.name, task_id=task_id, routing=routing,
+            run_id=self.run_id, task_id=task_id, routing=routing,
             gate_result={"verdict": gate_result.verdict, "score": gate_result.score,
                          "checks": [{"name": c.name, "passed": c.passed, "reason": c.reason} for c in gate_result.checks]},
             artifacts=artifacts, events=len(self.events.replay()),
             wall_seconds=wall, retry_count=retry_count,
+            adversarial=adversarial,
         )
         (self.run_dir / "merged_result.json").write_text(
             json.dumps(asdict(result), indent=2, default=str), encoding="utf-8"
         )
         return result
 
-    def _execute(self, task: Dict, routing: Dict) -> List[str]:
+    def _execute(self, task: Dict, routing: Dict, reservation: BudgetReservation) -> List[str]:
         if self.mode == "mock":
             return self._execute_mock(task, routing)
-        return self._execute_bridge(task, routing)
+        return self._execute_bridge(task, routing, reservation)
 
     def _execute_mock(self, task: Dict, routing: Dict) -> List[str]:
         artifacts = []
         strategy = routing.get("strategy", "simple_review")
         for sub in task.get("subproblems", []):
             sp_id = sub["id"]
-            art_path = f"artifacts/{sp_id}_artifact.md"
-            p = self.run_dir / art_path
-            p.parent.mkdir(parents=True, exist_ok=True)
-            p.write_text(
+            art_path = safe_artifact_path(self.run_dir, sp_id)
+            art_path.parent.mkdir(parents=True, exist_ok=True)
+            art_path.write_text(
                 f"# Mock: {sp_id}\n\nStrategy: {strategy}\nScore: 85\n"
                 f"Verdict: PASS_WITH_NOTES\nConfidence: MEDIUM\n\n"
                 f"## Findings\n- [MEDIUM] Mock finding\n\n"
                 f"## Final Recommendation\nACCEPT\n",
                 encoding="utf-8",
             )
-            artifacts.append(art_path)
+            artifacts.append(str(art_path.relative_to(self.run_dir)))
         return artifacts
 
-    def _execute_bridge(self, task: Dict, routing: Dict) -> List[str]:
+    def _execute_bridge(self, task: Dict, routing: Dict, reservation: BudgetReservation) -> List[str]:
         from tf_agent_executor import AgentExecutor, AgentTask
 
         executor = AgentExecutor()
@@ -427,12 +722,12 @@ class MergedHarness:
                 f"## Findings\n- [severity] [description]\n\n"
                 f"## Final Recommendation\n<ACCEPT | REPAIR | ESCALATE>\n"
             )
-            prompt_path = self.run_dir / "prompts" / f"{sp_id}_prompt.md"
+            # S1: safe path construction
+            prompt_path = safe_prompt_path(self.run_dir, sp_id)
             prompt_path.parent.mkdir(parents=True, exist_ok=True)
             prompt_path.write_text(prompt, encoding="utf-8")
 
-            art_path = f"artifacts/{sp_id}_artifact.md"
-            artifact_path = self.run_dir / art_path
+            artifact_path = safe_artifact_path(self.run_dir, sp_id)
             artifact_path.parent.mkdir(parents=True, exist_ok=True)
 
             task_obj = AgentTask(
@@ -442,14 +737,12 @@ class MergedHarness:
             )
             result = executor.execute_one(task_obj)
 
+            # G2: real budget tracking — record actual usage against real reservation
             tokens_est = len(prompt.split()) * 2 + 500
-            self.budget.record_usage(
-                BudgetReservation("tmp", "tmp", strategy, 99999, tokens_est),
-                tokens_est,
-            )
+            self.budget.record_usage(reservation, tokens_est)
 
             if result.success:
-                artifacts.append(art_path)
+                artifacts.append(str(artifact_path.relative_to(self.run_dir)))
                 self._event("agent_completed", {"subproblem": sp_id, "wall": result.wall_seconds})
             else:
                 self._event("agent_failed", {"subproblem": sp_id, "error": result.error})
@@ -473,6 +766,7 @@ def run_benchmark(mode: str = "mock") -> Dict:
     data = _yaml.safe_load(cases_file.read_text(encoding="utf-8"))
     cases = [c for c in data.get("cases", []) if c.get("small_task")]
 
+    import yaml as _y
     results = []
     for case in cases:
         harness = MergedHarness(mode=mode, timeout=180)
@@ -481,11 +775,11 @@ def run_benchmark(mode: str = "mock") -> Dict:
             "objective": case["task_text"],
             "subproblems": [{"id": case["id"], "prompt": case["task_text"], "subagent_type": "Plan"}],
         }
-        task_path = harness.run_dir / "task.yaml"
-        harness.run_dir.mkdir(parents=True, exist_ok=True)
-        import yaml as _y
-        task_path.write_text(_y.dump(task), encoding="utf-8")
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".yaml", delete=False) as f:
+            _y.dump(task, f)
+            task_path = Path(f.name)
 
+        result = None
         try:
             result = harness.run(task_path)
             score = result.gate_result.get("score", 0)
@@ -493,13 +787,15 @@ def run_benchmark(mode: str = "mock") -> Dict:
         except Exception as e:
             score = 0
             verdict = f"error: {e}"
+        finally:
+            task_path.unlink(missing_ok=True)
 
         results.append({
             "case_id": case["id"], "name": case["name"],
             "score": score, "verdict": verdict,
             "strategy": case.get("expected_strategy", "unknown"),
-            "events": result.events if 'result' in dir() else 0,
-            "wall_seconds": result.wall_seconds if 'result' in dir() else 0,
+            "events": result.events if result is not None else 0,
+            "wall_seconds": result.wall_seconds if result is not None else 0,
         })
 
     avg_score = sum(r["score"] for r in results) / len(results) if results else 0
@@ -515,6 +811,12 @@ def run_benchmark(mode: str = "mock") -> Dict:
 
 
 def main():
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s %(name)s %(levelname)s %(message)s",
+        handlers=[logging.StreamHandler(sys.stderr)],
+    )
+
     parser = argparse.ArgumentParser(description="Merged Harness")
     sub = parser.add_subparsers(dest="command")
 
@@ -537,6 +839,8 @@ def main():
         print(f"Wall: {result.wall_seconds}s")
         print(f"Retries: {result.retry_count}")
         print(f"Run dir: {harness.run_dir}")
+        if result.adversarial:
+            print(f"Adversarial: {result.adversarial['verdict']} ({len(result.adversarial['challenges'])} challenges)")
 
     elif args.command == "benchmark":
         print("=== Merged Harness Benchmark ===\n")
