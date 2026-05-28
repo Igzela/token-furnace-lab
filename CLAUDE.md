@@ -101,6 +101,7 @@ Active Research — 个人研究项目，迭代中，无外部用户。
   - orchestration-009: outcome memory + policy tuning loop (COMPLETE/PASS — 10 runs ingested, 13 lessons, 8 policy suggestions, 10 active policies, self-modification gate)
   - orchestration-010: safe policy application engine (COMPLETE/PASS — policy patches, config layer, regression tests 4/4, repeat failure detection, policy effectiveness measurement)
   - orchestration-011: adaptive task routing (COMPLETE/PASS — 3-layer router: task_profiler + memory_matcher + routing_decision, 8 task types, 7 strategies, routing outcome tracking)
+  - orchestration-012: self-evaluation benchmark (COMPLETE/PASS — 8 cases, adaptive vs baseline: +13.2 score, -83% missed blocking, 88% route accuracy, 0 false accepts)
 
 ### Key Decisions (FOC derivation series)
 

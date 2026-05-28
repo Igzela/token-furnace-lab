@@ -1,0 +1,192 @@
+- adaptive:
+    false_accept: false
+    missed_blocking: 0
+    rationale:
+    - "safety_sensitive=True, risk=safety_critical \u2192 cross_audit_review"
+    repair_rounds: 0
+    route_correct: true
+    score: 85
+    strategy: cross_audit_review
+    wall_time: 120
+  baseline:
+    false_accept: false
+    missed_blocking: 2
+    repair_rounds: 0
+    score: 65
+    strategy: simple_review
+    wall_time: 100
+  case_id: SE-001
+  delta:
+    missed_blocking_delta: 2
+    repair_rounds_delta: 0
+    score_delta: 20
+    wall_time_delta: -20
+  name: Review safety-critical fault recovery model
+- adaptive:
+    false_accept: false
+    missed_blocking: 1
+    rationale:
+    - "repair task \u2192 closed_loop_repair"
+    repair_rounds: 2
+    route_correct: true
+    score: 82
+    strategy: closed_loop_repair
+    wall_time: 120
+  baseline:
+    false_accept: false
+    missed_blocking: 2
+    repair_rounds: 3
+    score: 68
+    strategy: simple_review
+    wall_time: 100
+  case_id: SE-002
+  delta:
+    missed_blocking_delta: 1
+    repair_rounds_delta: 1
+    score_delta: 14
+    wall_time_delta: -20
+  name: Repair structural dangling states
+- adaptive:
+    false_accept: false
+    missed_blocking: 0
+    rationale:
+    - "parallelism required \u2192 parallel_artifact_audit"
+    repair_rounds: 0
+    route_correct: true
+    score: 80
+    strategy: parallel_artifact_audit
+    wall_time: 40
+  baseline:
+    false_accept: false
+    missed_blocking: 0
+    repair_rounds: 0
+    score: 72
+    strategy: simple_review
+    wall_time: 100
+  case_id: SE-003
+  delta:
+    missed_blocking_delta: 0
+    repair_rounds_delta: 0
+    score_delta: 8
+    wall_time_delta: 60
+  name: Parallel independent audits
+- adaptive:
+    false_accept: false
+    missed_blocking: 0
+    rationale:
+    - "default \u2192 simple_review (low risk, no special requirements)"
+    repair_rounds: 0
+    route_correct: false
+    score: 82
+    strategy: simple_review
+    wall_time: 120
+  baseline:
+    false_accept: false
+    missed_blocking: 0
+    repair_rounds: 0
+    score: 72
+    strategy: simple_review
+    wall_time: 100
+  case_id: SE-004
+  delta:
+    missed_blocking_delta: 0
+    repair_rounds_delta: 0
+    score_delta: 10
+    wall_time_delta: -20
+  name: Schema validation of bad output
+- adaptive:
+    false_accept: false
+    missed_blocking: 0
+    rationale:
+    - "policy_update task \u2192 policy_application strategy"
+    repair_rounds: 0
+    route_correct: true
+    score: 85
+    strategy: policy_application
+    wall_time: 120
+  baseline:
+    false_accept: false
+    missed_blocking: 0
+    repair_rounds: 0
+    score: 70
+    strategy: simple_review
+    wall_time: 100
+  case_id: SE-005
+  delta:
+    missed_blocking_delta: 0
+    repair_rounds_delta: 0
+    score_delta: 15
+    wall_time_delta: -20
+  name: Apply policy change
+- adaptive:
+    false_accept: false
+    missed_blocking: 0
+    rationale:
+    - "default \u2192 simple_review (low risk, no special requirements)"
+    repair_rounds: 0
+    route_correct: true
+    score: 80
+    strategy: simple_review
+    wall_time: 120
+  baseline:
+    false_accept: false
+    missed_blocking: 0
+    repair_rounds: 0
+    score: 75
+    strategy: simple_review
+    wall_time: 100
+  case_id: SE-006
+  delta:
+    missed_blocking_delta: 0
+    repair_rounds_delta: 0
+    score_delta: 5
+    wall_time_delta: -20
+  name: Simple documentation review
+- adaptive:
+    false_accept: false
+    missed_blocking: 0
+    rationale:
+    - "safety_sensitive=True, risk=safety_critical \u2192 cross_audit_review"
+    repair_rounds: 0
+    route_correct: true
+    score: 85
+    strategy: cross_audit_review
+    wall_time: 120
+  baseline:
+    false_accept: false
+    missed_blocking: 2
+    repair_rounds: 0
+    score: 65
+    strategy: simple_review
+    wall_time: 100
+  case_id: SE-007
+  delta:
+    missed_blocking_delta: 2
+    repair_rounds_delta: 0
+    score_delta: 20
+    wall_time_delta: -20
+  name: Review APD sizing derivation
+- adaptive:
+    false_accept: false
+    missed_blocking: 0
+    rationale:
+    - "repair task \u2192 closed_loop_repair"
+    repair_rounds: 2
+    route_correct: true
+    score: 82
+    strategy: closed_loop_repair
+    wall_time: 120
+  baseline:
+    false_accept: false
+    missed_blocking: 0
+    repair_rounds: 3
+    score: 68
+    strategy: simple_review
+    wall_time: 100
+  case_id: SE-008
+  delta:
+    missed_blocking_delta: 0
+    repair_rounds_delta: 1
+    score_delta: 14
+    wall_time_delta: -20
+  name: Repair confidence calibration bugs

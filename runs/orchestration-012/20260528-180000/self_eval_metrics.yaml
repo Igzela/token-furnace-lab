@@ -1,0 +1,33 @@
+adaptive_avg_score: 82.6
+adaptive_false_accept: 0
+adaptive_missed_blocking: 1
+baseline_avg_score: 69.4
+baseline_missed_blocking: 6
+efficiency_delta:
+  avg_repair_rounds_adaptive: 0.5
+  avg_repair_rounds_baseline: 0.8
+  avg_wall_time_adaptive: 110.0
+  avg_wall_time_baseline: 100.0
+  repair_round_reduction: 0.33
+heldout_cases: 2
+learning_delta:
+  route_accuracy: 0.88
+  strategies_used:
+  - parallel_artifact_audit
+  - policy_application
+  - closed_loop_repair
+  - simple_review
+  - cross_audit_review
+pass_criteria:
+  adaptive_false_accept_0: true
+  adaptive_final_score_gte_baseline: true
+  adaptive_missed_blocking_lte_baseline: true
+  benchmark_cases_gt_8: true
+  route_accuracy_gte_80: true
+quality_delta:
+  avg_score_delta: 13.2
+  missed_blocking_reduction: 0.83
+route_accuracy: 0.88
+seen_cases: 6
+total_cases: 8
+verdict: PASS

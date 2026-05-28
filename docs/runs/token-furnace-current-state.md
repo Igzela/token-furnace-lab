@@ -23,7 +23,8 @@
 | Phase 11 | Confidence & escalation calibration | orchestration-008 | COMPLETE/PASS | 92cb116 |
 | Phase 12 | Outcome memory + policy tuning loop | orchestration-009 | COMPLETE/PASS | 180e938 |
 | Phase 13 | Safe policy application engine | orchestration-010 | COMPLETE/PASS | 9312000 |
-| Phase 14 | Adaptive task routing | orchestration-011 | COMPLETE/PASS | pending |
+| Phase 14 | Adaptive task routing | orchestration-011 | COMPLETE/PASS | 2071a08 |
+| Phase 15 | Self-evaluation benchmark | orchestration-012 | COMPLETE/PASS | pending |
 
 ## Platform Consolidation
 
@@ -35,7 +36,7 @@
 
 ## Current Maturity
 
-**L4-AUTONOMOUS**: Multi-agent orchestration with quality gates, deterministic validators, and automated execution bridge.
+**L5-ADAPTIVE**: Multi-agent orchestration with adaptive routing, outcome memory, policy application, and self-evaluation benchmark.
 
 Capabilities validated:
 - Multi-model cross-audit (GPT + Claude Code + Codex)

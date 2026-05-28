@@ -1,0 +1,85 @@
+# Self-Evaluation Benchmark Cases
+# 6 seen (from 001-008) + 2 heldout (new variants)
+
+cases:
+  # --- Seen cases (replay) ---
+  - id: SE-001
+    name: "Review safety-critical fault recovery model"
+    task_text: "Review Phase E-001 fault recovery model for safety-critical timeout transitions and state machine completeness"
+    task_type: review
+    domain: control_system
+    risk_level: safety_critical
+    expected_strategy: cross_audit_review
+    source_run: orchestration-004
+    seen: true
+
+  - id: SE-002
+    name: "Repair structural dangling states"
+    task_text: "Repair IF_RAMP, OBSERVER_CHECK, and BLEND dangling state transitions in fault recovery model"
+    task_type: repair
+    domain: control_system
+    risk_level: high
+    expected_strategy: closed_loop_repair
+    source_run: orchestration-006
+    seen: true
+
+  - id: SE-003
+    name: "Parallel independent audits"
+    task_text: "Run 3 independent audits in parallel: fault-code consistency, timeout semantics, cold-start coverage"
+    task_type: review
+    domain: control_system
+    risk_level: medium
+    expected_strategy: parallel_artifact_audit
+    source_run: orchestration-007
+    seen: true
+
+  - id: SE-004
+    name: "Schema validation of bad output"
+    task_text: "Validate review artifact against schema — detect missing score, invalid verdict, forbidden paths"
+    task_type: validation
+    domain: orchestrator
+    risk_level: medium
+    expected_strategy: implementation_with_validators
+    source_run: orchestration-003
+    seen: true
+
+  - id: SE-005
+    name: "Apply policy change"
+    task_text: "Apply unsafe timeout transition policy to orchestrator gate configuration"
+    task_type: policy_update
+    domain: orchestrator
+    risk_level: medium
+    expected_strategy: policy_application
+    source_run: orchestration-010
+    seen: true
+
+  - id: SE-006
+    name: "Simple documentation review"
+    task_text: "Review wiki page for accuracy and completeness"
+    task_type: review
+    domain: documentation
+    risk_level: low
+    expected_strategy: simple_review
+    source_run: null
+    seen: true
+
+  # --- Heldout cases (new variants) ---
+  - id: SE-007
+    name: "Review APD sizing derivation"
+    task_text: "Review active power decoupling branch sizing derivation for 300W single-phase drive with safety implications"
+    task_type: review
+    domain: control_system
+    risk_level: high
+    expected_strategy: cross_audit_review
+    source_run: null
+    seen: false
+
+  - id: SE-008
+    name: "Repair confidence calibration bugs"
+    task_text: "Fix negation handling and default fallback bugs in confidence_calibrator timeout classifier"
+    task_type: repair
+    domain: orchestrator
+    risk_level: medium
+    expected_strategy: closed_loop_repair
+    source_run: null
+    seen: false
