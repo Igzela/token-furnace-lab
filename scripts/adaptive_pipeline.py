@@ -52,15 +52,17 @@ class AdaptivePipeline:
         profile = profile_task(task_text)
         similar = find_similar_runs(profile)
         strategy, rationale = select_strategy(profile, similar)
-        decision = build_routing_decision(profile, similar, strategy, rationale)
+        decision = build_routing_decision(profile, strategy, similar, rationale)
         return decision
 
     def execute(self, task: Dict, routing: Dict, run_dir: Path) -> Dict[str, Dict]:
+        if self.mode == "mock":
+            return self._execute_mock(task, routing, run_dir)
+
         from tf_agent_executor import AgentExecutor, AgentTask
 
         executor = AgentExecutor()
         results = {}
-        agents = routing.get("agents", [])
         parallel = routing.get("execution", {}).get("parallel", False)
 
         tasks = []
@@ -92,6 +94,35 @@ class AdaptivePipeline:
         for sp_id, r in raw_results.items():
             results[sp_id] = asdict(r) if hasattr(r, '__dataclass_fields__') else r
 
+        return results
+
+    def _execute_mock(self, task: Dict, routing: Dict, run_dir: Path) -> Dict[str, Dict]:
+        results = {}
+        strategy = routing.get("strategy", "simple_review")
+        for sub in task.get("subproblems", []):
+            sp_id = sub["id"]
+            artifact_path = run_dir / sub.get("artifact_path", f"artifacts/{sp_id}_artifact.md")
+            artifact_path.parent.mkdir(parents=True, exist_ok=True)
+            mock_content = (
+                f"# Mock Artifact: {sp_id}\n\n"
+                f"Strategy: {strategy}\n"
+                f"Score: 82\n"
+                f"Verdict: PASS_WITH_NOTES\n"
+                f"Confidence: MEDIUM\n\n"
+                f"## Findings\n"
+                f"- [MEDIUM] Mock finding for pipeline plumbing verification\n\n"
+                f"## Final Recommendation\n"
+                f"ACCEPT\n"
+            )
+            artifact_path.write_text(mock_content, encoding="utf-8")
+            results[sp_id] = {
+                "subproblem_id": sp_id,
+                "artifact_path": str(artifact_path),
+                "success": True,
+                "wall_seconds": 0.1,
+                "error": None,
+                "exit_code": 0,
+            }
         return results
 
     def gate(self, task: Dict, agent_results: Dict[str, Dict], run_dir: Path) -> Dict[str, Dict]:
@@ -129,7 +160,7 @@ class AdaptivePipeline:
 
         return gate_results
 
-    def learn(self, task: Dict, routing: Dict, gate_results: Dict[str, Dict], run_dir: Path) -> List[str]:
+    def learn(self, task: Dict, routing: Dict, agent_results: Dict[str, Dict], gate_results: Dict[str, Dict], run_dir: Path) -> List[str]:
         lessons = []
         statuses = [gr.get("status", "") for gr in gate_results.values()]
         all_accept = all(s == "ACCEPT" for s in statuses)
@@ -181,7 +212,8 @@ class AdaptivePipeline:
         print(f"=== Adaptive Pipeline: {run_id} ===")
 
         print("1. Routing...")
-        routing = self.route(task)
+        routing_decision = self.route(task)
+        routing = asdict(routing_decision) if hasattr(routing_decision, '__dataclass_fields__') else routing_decision
         print(f"   Strategy: {routing.get('strategy', 'unknown')}")
 
         (run_dir / "routing_decision.json").write_text(
@@ -201,7 +233,7 @@ class AdaptivePipeline:
         print(f"   Verdict: {overall}")
 
         print("4. Learning...")
-        lessons = self.learn(task, routing, gate_results, run_dir)
+        lessons = self.learn(task, routing, agent_results, gate_results, run_dir)
         for lesson in lessons:
             print(f"   - {lesson}")
 

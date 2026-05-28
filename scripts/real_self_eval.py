@@ -241,12 +241,9 @@ def generate_report(results: List[RealCaseResult]) -> Dict:
     }
 
 
-def main():
-    if len(sys.argv) < 2:
-        print(__doc__)
-        sys.exit(1)
-
-    action = sys.argv[1]
+def main(action: str = "run"):
+    if not action and len(sys.argv) >= 2:
+        action = sys.argv[1]
 
     if action == "run":
         print("=== Real Self-Evaluation Benchmark ===\n")
