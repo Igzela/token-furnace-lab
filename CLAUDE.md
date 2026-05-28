@@ -96,6 +96,7 @@ Active Research — 个人研究项目，迭代中，无外部用户。
   - orchestration-004: real multi-model cross-audit (77/100 PASS_WITH_NOTES — Claude 78 + GPT 76, GPT found 2 additional HIGH blocking findings)
   - orchestration-005: review fusion + multi-reviewer gate (COMPLETE — findings union, blocking override, disagreement tracking)
   - orchestration-006: fused repair execution benchmark (COMPLETE — closed-loop verified, ACCEPT 92/90, 2 repair rounds)
+  - orchestration-007: multi-worktree parallel dispatch (COMPLETE — 3/3 subproblems parallel, artifacts collected, ~30s wall time)
 
 ### Key Decisions (FOC derivation series)
 
