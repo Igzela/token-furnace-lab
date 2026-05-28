@@ -1004,6 +1004,69 @@ def run_fuse(review_files: List[Path], score_min: int = 80) -> None:
     print(f"\nWritten: {output_path}")
 
 
+def run_parallel_dispatch(task_yaml: Path, max_parallel: int = 3, timeout: int = 300) -> None:
+    """Run subproblems in parallel worktrees."""
+    from worktree_manager import WorktreeManager, run_parallel
+    import yaml as _yaml
+
+    task = _yaml.safe_load(task_yaml.read_text(encoding="utf-8"))
+    run_id = task.get("task_id", f"orch-{now_id()}")
+    subproblems = task.get("subproblems", [])
+
+    if not subproblems:
+        print("ERROR: No subproblems defined in task YAML")
+        sys.exit(1)
+
+    print(f"=== Parallel Dispatch: {run_id} ===")
+    print(f"Subproblems: {len(subproblems)}, max parallel: {max_parallel}")
+
+    # Create run directory
+    run_dir = Path(f"runs/orchestration/{now_id()}")
+    run_dir.mkdir(parents=True, exist_ok=True)
+
+    # Run subproblems in parallel
+    results = run_parallel(run_id, subproblems, max_parallel=max_parallel, timeout=timeout)
+
+    # Collect artifacts
+    manager = WorktreeManager(run_id)
+    collected = {}
+    for sub in subproblems:
+        sub_id = sub["id"]
+        result = results.get(sub_id, {})
+        status = result.get("status", "unknown")
+
+        if status == "completed":
+            artifact = sub.get("artifact", "")
+            if artifact:
+                dest = manager.collect_artifact(sub_id, artifact, run_dir / "artifacts")
+                if dest:
+                    collected[sub_id] = str(dest)
+                    print(f"  {sub_id}: collected {artifact}")
+                else:
+                    print(f"  {sub_id}: artifact {artifact} not found in worktree")
+            else:
+                print(f"  {sub_id}: completed (no artifact specified)")
+        elif status == "failed":
+            print(f"  {sub_id}: FAILED (exit {result.get('returncode')})")
+        elif status == "timeout":
+            print(f"  {sub_id}: TIMEOUT")
+        else:
+            print(f"  {sub_id}: {status}")
+
+    # Cleanup worktrees
+    manager.cleanup()
+
+    # Write results
+    results_yaml = _yaml.dump(results, default_flow_style=False, sort_keys=False)
+    (run_dir / "parallel_results.yaml").write_text(results_yaml, encoding="utf-8")
+
+    print(f"\nResults written to: {run_dir}")
+    print(f"Collected artifacts: {len(collected)}")
+
+
+
+
+
 def main():
     parser = argparse.ArgumentParser(description="Token Furnace Orchestrator")
     sub = parser.add_subparsers(dest="command")
@@ -1029,6 +1092,11 @@ def main():
     fuse_p.add_argument("review_files", nargs="+", type=Path, help="Review markdown files")
     fuse_p.add_argument("--score-min", type=int, default=80)
 
+    parallel_p = sub.add_parser("parallel", help="Run subproblems in parallel worktrees")
+    parallel_p.add_argument("task_yaml", type=Path, help="Task YAML with subproblems")
+    parallel_p.add_argument("--max-parallel", type=int, default=3)
+    parallel_p.add_argument("--timeout", type=int, default=300)
+
     args = parser.parse_args()
 
     if args.command == "run":
@@ -1041,6 +1109,8 @@ def main():
         generate_closeout(args.run_dir)
     elif args.command == "fuse":
         run_fuse(args.review_files, args.score_min)
+    elif args.command == "parallel":
+        run_parallel_dispatch(args.task_yaml, args.max_parallel, args.timeout)
     else:
         parser.print_help()
 

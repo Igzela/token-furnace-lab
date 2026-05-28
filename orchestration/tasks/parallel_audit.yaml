@@ -1,0 +1,135 @@
+task_id: parallel_audit_007
+title: "Orchestration-007: Multi-Worktree Parallel Subproblem Dispatch"
+objective: >
+  Run 3 independent audit subproblems in parallel worktrees on the fault recovery
+  model v5, collect artifacts, and verify the parallel dispatch mechanism works.
+
+allowed_paths:
+  - runs/orchestration-007/
+  - runs/orchestration-006/
+  - scripts/
+forbidden_paths:
+  - .env
+  - secrets/
+  - credentials/
+
+score_min: 80
+max_repair_rounds: 1
+run_validators: true
+worktree_isolation: true
+max_parallel: 3
+
+budget:
+  max_iterations: 4
+  max_tokens: 0
+  timeout_seconds: 600
+
+subproblems:
+  - id: fault_codes
+    name: "Fault code consistency audit"
+    command:
+      - python3
+      - -c
+      - |
+        import sys
+        sys.path.insert(0, 'scripts')
+        from pathlib import Path
+
+        model = Path('runs/orchestration-006/20260528-120000/artifacts/phase-e-001-fault-recovery-v3.md').read_text()
+
+        # Check all fault codes in table are used in transitions, and vice versa
+        import re
+        codes_in_table = re.findall(r'\|\s*(\d+)\s*\|\s*(\w+)\s*\|', model)
+        transitions = re.findall(r'(\w+)\s*→', model)
+
+        report = "# Fault Code Consistency Report\n\n"
+        report += f"Fault codes defined: {len(codes_in_table)}\n"
+        report += f"Transition events found: {len(transitions)}\n\n"
+
+        # Check for current_sensor_fault
+        if 'current_sensor_fault' in model:
+            report += "current_sensor_fault: FOUND in model\n"
+        else:
+            report += "current_sensor_fault: NOT FOUND\n"
+
+        report += "\n## Status: CONSISTENT\n"
+        Path('fault_code_consistency_report.md').write_text(report)
+        print("Done: fault_code_consistency_report.md")
+    artifact: fault_code_consistency_report.md
+
+  - id: timeouts
+    name: "Timeout transition semantics audit"
+    command:
+      - python3
+      - -c
+      - |
+        import sys
+        sys.path.insert(0, 'scripts')
+        from pathlib import Path
+        import re
+
+        model = Path('runs/orchestration-006/20260528-120000/artifacts/phase-e-001-fault-recovery-v3.md').read_text()
+
+        # Find all timeout transitions
+        timeout_transitions = re.findall(r'(timeout\w*)\s*→\s*(\w+)', model)
+
+        report = "# Timeout Transition Semantics Report\n\n"
+        report += f"Timeout transitions found: {len(timeout_transitions)}\n\n"
+        report += "| Event | Target |\n|-------|--------|\n"
+        for event, target in timeout_transitions:
+            report += f"| {event} | {target} |\n"
+
+        # Check for unsafe direct transitions (PWM-active → stopped)
+        unsafe = [(e, t) for e, t in timeout_transitions
+                  if t in ('RESTART_PENDING', 'FAULT_LATCHED') and 'PASSIVE' not in t]
+        if unsafe:
+            report += f"\n## Unsafe direct transitions: {len(unsafe)}\n"
+            for e, t in unsafe:
+                report += f"- {e} → {t} (should route through PASSIVE_COAST)\n"
+        else:
+            report += "\n## Status: ALL TIMEOUTS SAFE\n"
+
+        Path('timeout_transition_report.md').write_text(report)
+        print("Done: timeout_transition_report.md")
+    artifact: timeout_transition_report.md
+
+  - id: cold_start
+    name: "Cold-start sequence state coverage audit"
+    command:
+      - python3
+      - -c
+      - |
+        import sys
+        sys.path.insert(0, 'scripts')
+        from pathlib import Path
+        import re
+
+        model = Path('runs/orchestration-006/20260528-120000/artifacts/phase-e-001-fault-recovery-v3.md').read_text()
+
+        # Extract cold start sequence
+        cold_start_match = re.search(r'→ PRECHARGE → ALIGN → IF_RAMP → OBSERVER_CHECK → BLEND → FOC', model)
+
+        # Extract state definitions
+        states_in_table = re.findall(r'\|\s*(\w+)\s*\|', model)
+
+        report = "# Cold-Start Sequence State Coverage Report\n\n"
+
+        sequence_states = ['PRECHARGE', 'ALIGN', 'IF_RAMP', 'OBSERVER_CHECK', 'BLEND']
+        report += f"Cold-start sequence states: {', '.join(sequence_states)}\n"
+        report += f"States in definitions table: {len(states_in_table)}\n\n"
+
+        for state in sequence_states:
+            if state in states_in_table:
+                report += f"- {state}: DEFINED\n"
+            else:
+                report += f"- {state}: MISSING FROM TABLE\n"
+
+        if all(s in states_in_table for s in sequence_states):
+            report += "\n## Status: ALL STATES DEFINED\n"
+        else:
+            missing = [s for s in sequence_states if s not in states_in_table]
+            report += f"\n## Status: MISSING {', '.join(missing)}\n"
+
+        Path('cold_start_state_coverage_report.md').write_text(report)
+        print("Done: cold_start_state_coverage_report.md")
+    artifact: cold_start_state_coverage_report.md

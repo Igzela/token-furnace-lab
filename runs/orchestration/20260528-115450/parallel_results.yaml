@@ -1,0 +1,15 @@
+timeouts:
+  status: completed
+  returncode: 0
+  output_file: /tmp/tf-parallel-parallel_audit_007-timeouts.log
+  worktree_path: /home/igzela/Projects/token-furnace-lab/.claude/worktrees/parallel_audit_007/timeouts
+cold_start:
+  status: completed
+  returncode: 0
+  output_file: /tmp/tf-parallel-parallel_audit_007-cold_start.log
+  worktree_path: /home/igzela/Projects/token-furnace-lab/.claude/worktrees/parallel_audit_007/cold_start
+fault_codes:
+  status: completed
+  returncode: 0
+  output_file: /tmp/tf-parallel-parallel_audit_007-fault_codes.log
+  worktree_path: /home/igzela/Projects/token-furnace-lab/.claude/worktrees/parallel_audit_007/fault_codes
