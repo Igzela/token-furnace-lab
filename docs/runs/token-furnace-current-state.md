@@ -3,8 +3,8 @@
 ## Metadata
 
 - Generated: 2026-05-28
-- Maturity: L3-VALIDATED
-- Total Phases Completed: 4
+- Maturity: L4-AUTONOMOUS
+- Total Phases Completed: 5
 
 ## Completed Phases
 
@@ -14,6 +14,7 @@
 | Phase 2 | MCP bridge tool-boundary audit | mcp-bridge-boundary-audit-phase-1 | COMPLETE/PASS/PASS | a9615de |
 | Phase 3 | Workflow quality-gate audit | workflow-quality-gate-audit-phase-1 | COMPLETE/PASS_WITH_NOTES/PASS | 6a7df2d |
 | Phase 4 | PDF-to-algorithm extraction benchmark | pdf-to-algorithm-benchmark-phase-1 | COMPLETE/PASS_WITH_NOTES/PASS | 0e46c71 |
+| Phase 5 | Multi-agent orchestration | multi-agent-orchestration | COMPLETE/PASS | 4313909 |
 
 ## Platform Consolidation
 
@@ -21,20 +22,29 @@
 |-----------|-----|---------|--------|
 | Platform v1 | token-furnace-platform-v1 | L3-VALIDATED | 9a0c4b8 |
 | Methodology v1 | token-furnace-methodology-v1 | ACCEPTED | 6100a6c |
+| Orchestrator v1 | multi-agent-orchestration | L4-AUTONOMOUS | 4313909 |
 
 ## Current Maturity
 
-**L3-VALIDATED**: Multi-phase experiment lifecycle proven across heterogeneous targets.
+**L4-AUTONOMOUS**: Multi-agent orchestration with quality gates, deterministic validators, and automated execution bridge.
 
 Capabilities validated:
 - Multi-model cross-audit (GPT + Claude Code + Codex)
 - Structured knowledge distillation (decisions, evaluator-rules, failures, wiki, matrices)
-- Automated workflow validators (3 scripts)
+- Automated workflow validators (3 scripts: state machine, review artifact, scope diff)
 - Canonical run layout with legacy compatibility
 - 30-case workflow quality-gate matrix
 - 16-case MCP bridge boundary matrix
 - 8-case hermes permission matrix
 - PDF-to-algorithm extraction pipeline (Claude Code → GPT → quality assessment)
+- **Multi-agent orchestrator** (queue/mock/command/bridge modes)
+- **Deterministic quality gate** (score + verdict + validator errors + evidence validation)
+- **Budget ledger** (iterations, wall time, per-round tracking)
+- **Idempotent resume** (run_state.json survives interruption)
+- **Rollback policy** (worktree quarantine on failure)
+- **Closeout generator** (final_verdict.yaml + synthesis.md)
+- **Agent bridge** (Claude Code CLI wrapper for automated execution)
+- **E2E test**: queue → subagent → gate → ACCEPT (82/100)
 
 ## Reusable Templates
 
@@ -42,6 +52,7 @@ Capabilities validated:
 - `templates/synthesis.md` — Synthesis report
 - `templates/matrix.yaml` — Conformance/risk matrix
 - `templates/phase-closeout.md` — Phase closeout
+- `templates/agent_contract.yaml` — Agent task contract
 
 ## Runnable Validators
 
@@ -54,6 +65,14 @@ python3 scripts/validate_matrix_consistency.py knowledge/matrices/<matrix>.yaml
 
 # Synthesis evidence
 python3 scripts/validate_synthesis_evidence.py runs/<experiment>/<timestamp>/
+
+# Orchestrator validation
+python3 scripts/tf_orchestrator.py validate <artifact> --type <state_machine|review>
+python3 scripts/tf_orchestrator.py gate <run_dir> <round>
+python3 scripts/tf_orchestrator.py closeout <run_dir>
+
+# Full orchestration run
+python3 scripts/tf_orchestrator.py run <task.yaml> --mode <mock|queue|bridge>
 ```
 
 ## Why PASS_WITH_NOTES (Not Strict PASS)

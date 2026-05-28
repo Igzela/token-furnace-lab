@@ -165,3 +165,20 @@ python3 scripts/tf_orchestrator.py validate artifact.md --type state_machine
 # Generate closeout
 python3 scripts/tf_orchestrator.py closeout runs/orchestration/<run_id>
 ```
+
+## E2E Test Results
+
+**Run**: `runs/orchestration/20260528-101549/`
+**Task**: Review Phase E-001 fault recovery model
+**Mode**: queue → Plan subagent → gate → closeout
+
+| Step | Result |
+|------|--------|
+| Prompt generation | 62-line prompt with constraints, sections, evidence requirements |
+| Agent execution | Plan subagent reviewed fault recovery model, produced 207-line artifact |
+| Review scoring | 82/100, PASS_WITH_NOTES, HIGH confidence |
+| Gate evaluation | ACCEPT (82 >= 70 threshold) |
+| Findings | 1 HIGH (current_sensor_fault missing from UNIVERSAL), 3 MEDIUM, 6 LOW |
+| Closeout | final_verdict.yaml + synthesis.md generated |
+
+**Key finding**: The agent found that `current_sensor_fault` is missing from the UNIVERSAL hard-fault section — it only appears in FOC_NORMAL, meaning current sensor loss in FOC_DERATED, OBSERVER_DEGRADED, or APD_DEGRADED leaves the system running blind.
