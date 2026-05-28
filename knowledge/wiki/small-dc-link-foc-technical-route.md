@@ -106,6 +106,7 @@ Technical roadmap for 22µF DC-link + sensorless FOC + water pump + TMS320F28035
 | phase-a-001 | FOC design | COMPLETE | - | F28035 budget OK, modules defined |
 | phase-a-002 | FOC interface | COMPLETE | 86/100 | GPT PASS_WITH_NOTES. v3: theta mux, IqLimiter, split omega scaling, applied voltage SMO |
 | phase-a-003 | FOC hw test | PENDING | - | Next: validate on 1360µF hardware |
+| phase-b-001 | I-f startup | COMPLETE | 76/100 | GPT PASS_WITH_NOTES. 168/216 pass. Observer model weak, ke/ψf unresolved, blend needs gating |
 
 ## References
 
@@ -123,3 +124,4 @@ Technical roadmap for 22µF DC-link + sensorless FOC + water pump + TMS320F28035
 - E5b: derivation-005 — Joint simulation (86/100 PASS_WITH_NOTES, COMPLETE)
 - E5b-final: GPT final verification — PASS_WITH_NOTES, 300W conditionally feasible, recommended baseline 22µF+22µF/500V APD
 - E6: derivation-006 — APD hardware sizing (84/100 PASS_WITH_NOTES, COMPLETE): 650V MOSFET (Case A unipolar), 1.56mH inductor, 3.65W loss, 160 configs swept
+- E7: phase-b-001 — I-f startup + FOC transition (76/100 PASS_WITH_NOTES, COMPLETE): 168/216 configs pass, 300ms startup, observer model needs expansion, ke/ψf convention unresolved

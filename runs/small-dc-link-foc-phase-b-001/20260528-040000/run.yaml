@@ -1,0 +1,23 @@
+run_id: small-dc-link-foc-phase-b-001
+timestamp: "20260528-040000"
+status: COMPLETE
+topic: I-f startup + smooth FOC transition
+branch: exp/hermes-perm-audit-001
+verdicts:
+  experiment_verdict: PASS_WITH_NOTES
+  model_verdict: GPT_FINAL_PASS_WITH_NOTES
+  reason: >
+    GPT scored 76/100 PASS_WITH_NOTES. Startup structure sound but observer model
+    too simplistic, ke/ψf convention unresolved, blend must be observer-gated.
+    168/216 configs pass simulation (77.8%). Critical corrections needed before
+    implementation: expand observer model, fix ke/ψf, add APD precharge state.
+deliverables:
+  - task.md
+  - model_outputs/claude-code-derivation.md
+  - model_outputs/startup_model.py
+  - model_outputs/sweep_results.md
+  - model_outputs/sweep_raw.json
+  - model_outputs/synthesis.md
+  - model_outputs/gpt-review.md
+  - synthesis/synthesis.md
+next_step: Apply GPT corrections (observer model, ke/ψf convention, observer-gated blend) in Phase B-002
