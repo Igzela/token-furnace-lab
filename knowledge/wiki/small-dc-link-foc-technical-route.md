@@ -107,6 +107,7 @@ Technical roadmap for 22µF DC-link + sensorless FOC + water pump + TMS320F28035
 | phase-a-002 | FOC interface | COMPLETE | 86/100 | GPT PASS_WITH_NOTES. v3: theta mux, IqLimiter, split omega scaling, applied voltage SMO |
 | phase-a-003 | FOC hw test | PENDING | - | Next: validate on 1360µF hardware |
 | phase-b-001 | I-f startup | COMPLETE | 76/100 | GPT PASS_WITH_NOTES. 168/216 pass. Observer model weak, ke/ψf unresolved, blend needs gating |
+| phase-b-002 | I-f startup corrected | COMPLETE | 82/100 | GPT PASS_WITH_NOTES. All B-001 corrections applied. 252/252 pass. ψ_f=0.08Wb, expanded observer, observer-gated blend |
 
 ## References
 
@@ -125,3 +126,4 @@ Technical roadmap for 22µF DC-link + sensorless FOC + water pump + TMS320F28035
 - E5b-final: GPT final verification — PASS_WITH_NOTES, 300W conditionally feasible, recommended baseline 22µF+22µF/500V APD
 - E6: derivation-006 — APD hardware sizing (84/100 PASS_WITH_NOTES, COMPLETE): 650V MOSFET (Case A unipolar), 1.56mH inductor, 3.65W loss, 160 configs swept
 - E7: phase-b-001 — I-f startup + FOC transition (76/100 PASS_WITH_NOTES, COMPLETE): 168/216 configs pass, 300ms startup, observer model needs expansion, ke/ψf convention unresolved
+- E8: phase-b-002 — Corrected I-f startup (82/100 PASS_WITH_NOTES, COMPLETE): All B-001 corrections applied, ψ_f=0.08Wb, expanded observer, 252/252 pass, 35.5° max error needs three thresholds

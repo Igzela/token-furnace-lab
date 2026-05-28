@@ -1,0 +1,23 @@
+run_id: small-dc-link-foc-phase-b-002
+timestamp: "20260528-050000"
+status: COMPLETE
+topic: Corrected I-f startup (GPT corrections from B-001)
+branch: exp/hermes-perm-audit-001
+verdicts:
+  experiment_verdict: PASS_WITH_NOTES
+  model_verdict: GPT_FINAL_PASS_WITH_NOTES
+  reason: >
+    GPT scored 82/100 PASS_WITH_NOTES. All B-001 corrections applied: ψ_f=0.08Wb,
+    expanded observer, APD precharge, observer-gated blend, S-curve ramp, fault exits.
+    252/252 configs pass. Max angle error 35.5° — acceptable for acquisition but needs
+    three thresholds for FOC handover. RSS model optimistic for systematic errors.
+deliverables:
+  - task.md
+  - model_outputs/startup_model_v2.py
+  - model_outputs/sweep_results_v2.md
+  - model_outputs/sweep_raw_v2.json
+  - model_outputs/synthesis.md
+  - model_outputs/gpt-review.md
+  - model_outputs/parameter_convention.md
+  - synthesis/synthesis.md
+next_step: Apply three-threshold blend rule and anti-chatter logic in Phase B-003, or proceed to Phase C (DC-link management)
