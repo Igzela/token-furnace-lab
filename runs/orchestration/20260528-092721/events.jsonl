@@ -1,0 +1,3 @@
+{"ts": "2026-05-28T09:27:21", "event": "run_start", "task_id": "foc_fault_recovery_review", "mode": "queue"}
+{"ts": "2026-05-28T09:27:21", "event": "agent_dispatched", "subproblem": "e001_review"}
+{"ts": "2026-05-28T09:27:21", "event": "run_complete"}
