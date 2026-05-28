@@ -1,0 +1,66 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Review Finding Schema",
+  "description": "Schema for structured review findings from agent reviewers",
+  "type": "object",
+  "required": ["score", "verdict", "findings"],
+  "properties": {
+    "score": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 100,
+      "description": "Overall score 0-100"
+    },
+    "verdict": {
+      "type": "string",
+      "enum": ["PASS", "PASS_WITH_NOTES", "FAIL"],
+      "description": "Final verdict"
+    },
+    "findings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["severity", "category", "description"],
+        "properties": {
+          "severity": {
+            "type": "string",
+            "enum": ["low", "medium", "high", "critical"]
+          },
+          "category": {
+            "type": "string",
+            "enum": ["correctness", "safety", "completeness", "evidence", "scope", "style", "performance"]
+          },
+          "description": {
+            "type": "string",
+            "minLength": 10
+          },
+          "evidence_path": {
+            "type": ["string", "null"],
+            "description": "Path to evidence supporting this finding"
+          },
+          "fixed": {
+            "type": "boolean",
+            "default": false,
+            "description": "Whether this finding has been addressed"
+          },
+          "suggestion": {
+            "type": ["string", "null"],
+            "description": "Suggested fix"
+          }
+        }
+      }
+    },
+    "summary": {
+      "type": "string",
+      "description": "One-paragraph review summary"
+    },
+    "strong_points": {
+      "type": "array",
+      "items": {"type": "string"}
+    },
+    "corrections_required": {
+      "type": "array",
+      "items": {"type": "string"}
+    }
+  }
+}

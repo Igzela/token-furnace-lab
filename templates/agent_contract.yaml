@@ -1,0 +1,96 @@
+# Agent Contract Template
+# Copy this to runs/<experiment>/<timestamp>/contract.yaml and customize
+
+version: "1.0"
+contract_id: "placeholder-contract"
+run_id: "YYYYMMDD-HHMMSS"
+parent_task_id: null
+
+task:
+  objective: "Describe what this task achieves"
+  scope:
+    target_repo: "token-furnace-lab"
+    allowed_paths:
+      - "runs/<experiment>/<timestamp>/"
+      - "knowledge/wiki/"
+    forbidden_paths:
+      - ".env"
+      - "secrets/"
+      - "node_modules/"
+    allowed_actions:
+      - read
+      - write
+      - edit
+      - test
+    forbidden_actions:
+      - network
+      - secrets
+      - destructive_ops
+  non_goals:
+    - "No hardware control code"
+    - "No destructive operations"
+  assumptions:
+    - "TMS320F28035 platform"
+    - "22uF DC-link"
+  expected_outputs:
+    - "model_outputs/*.md"
+    - "model_outputs/*.py"
+
+agent:
+  role: implementer
+  model_hint: null
+  tools_allowed:
+    - read
+    - edit
+    - write
+    - shell
+  execution_mode: foreground
+  worktree: null
+
+artifact:
+  artifact_id: "main-output"
+  artifact_type: derivation
+  file_path: "model_outputs/main_output.md"
+  required_sections:
+    - "## Goal"
+    - "## Method"
+    - "## Results"
+    - "## Conclusion"
+  evidence_required: true
+  schema_path: null
+
+review:
+  required: true
+  reviewer_role: gpt_reviewer
+  review_output_path: "model_outputs/gpt-review.md"
+  finding_schema_required: true
+
+quality_gate:
+  score_min: 70
+  verdict_accept:
+    - PASS
+    - PASS_WITH_NOTES
+  verdict_reject:
+    - FAIL
+  max_repair_rounds: 2
+  require_evidence_for_pass: true
+  require_tests_for_code_pass: false
+  reject_if:
+    - accepted_finding_without_evidence
+    - missing_required_section
+    - score_below_min
+
+budget:
+  max_tokens: 100000
+  max_iterations: 3
+  timeout_seconds: 300
+  max_cost_usd: null
+
+escalation:
+  triggers:
+    - low_confidence
+    - reviewer_disagreement
+    - high_severity_unresolved
+    - scope_expansion_needed
+    - budget_exceeded
+  contact: human

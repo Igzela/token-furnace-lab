@@ -1,0 +1,213 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Agent Contract Schema",
+  "description": "Machine-readable contract for multi-agent orchestration",
+  "type": "object",
+  "required": ["version", "contract_id", "run_id", "task", "agent", "artifact", "review", "quality_gate", "budget"],
+  "properties": {
+    "version": {
+      "type": "string",
+      "enum": ["1.0"]
+    },
+    "contract_id": {
+      "type": "string",
+      "pattern": "^[a-z0-9-]+$"
+    },
+    "run_id": {
+      "type": "string",
+      "pattern": "^\\d{8}-\\d{4}$"
+    },
+    "parent_task_id": {
+      "type": ["string", "null"]
+    },
+    "task": {
+      "type": "object",
+      "required": ["objective", "scope", "non_goals"],
+      "properties": {
+        "objective": {
+          "type": "string",
+          "minLength": 10
+        },
+        "scope": {
+          "type": "object",
+          "required": ["target_repo", "allowed_paths", "forbidden_paths"],
+          "properties": {
+            "target_repo": {
+              "type": "string"
+            },
+            "allowed_paths": {
+              "type": "array",
+              "items": {"type": "string"}
+            },
+            "forbidden_paths": {
+              "type": "array",
+              "items": {"type": "string"}
+            },
+            "allowed_actions": {
+              "type": "array",
+              "items": {"type": "string", "enum": ["read", "write", "test", "commit", "edit", "shell"]}
+            },
+            "forbidden_actions": {
+              "type": "array",
+              "items": {"type": "string", "enum": ["network", "secrets", "destructive_ops", "push", "force"]}
+            }
+          }
+        },
+        "non_goals": {
+          "type": "array",
+          "items": {"type": "string"}
+        },
+        "assumptions": {
+          "type": "array",
+          "items": {"type": "string"}
+        },
+        "expected_outputs": {
+          "type": "array",
+          "items": {"type": "string"}
+        }
+      }
+    },
+    "agent": {
+      "type": "object",
+      "required": ["role"],
+      "properties": {
+        "role": {
+          "type": "string",
+          "enum": ["explorer", "implementer", "reviewer", "risk_reviewer", "synthesizer"]
+        },
+        "model_hint": {
+          "type": ["string", "null"]
+        },
+        "tools_allowed": {
+          "type": "array",
+          "items": {"type": "string", "enum": ["read", "edit", "shell", "test", "browser", "send_message", "write"]}
+        },
+        "execution_mode": {
+          "type": "string",
+          "enum": ["foreground", "background"]
+        },
+        "worktree": {
+          "type": ["string", "null"]
+        }
+      }
+    },
+    "artifact": {
+      "type": "object",
+      "required": ["artifact_id", "artifact_type", "file_path"],
+      "properties": {
+        "artifact_id": {
+          "type": "string",
+          "pattern": "^[a-z0-9-]+$"
+        },
+        "artifact_type": {
+          "type": "string",
+          "enum": ["code", "review", "plan", "derivation", "synthesis", "test_report"]
+        },
+        "file_path": {
+          "type": "string"
+        },
+        "required_sections": {
+          "type": "array",
+          "items": {"type": "string"}
+        },
+        "evidence_required": {
+          "type": "boolean",
+          "default": true
+        },
+        "schema_path": {
+          "type": ["string", "null"]
+        }
+      }
+    },
+    "review": {
+      "type": "object",
+      "required": ["required", "reviewer_role", "review_output_path"],
+      "properties": {
+        "required": {
+          "type": "boolean"
+        },
+        "reviewer_role": {
+          "type": "string",
+          "enum": ["gpt_reviewer", "codex_reviewer", "security_reviewer", "code_reviewer"]
+        },
+        "review_output_path": {
+          "type": "string"
+        },
+        "finding_schema_required": {
+          "type": "boolean",
+          "default": true
+        }
+      }
+    },
+    "quality_gate": {
+      "type": "object",
+      "required": ["score_min", "verdict_accept", "verdict_reject"],
+      "properties": {
+        "score_min": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "verdict_accept": {
+          "type": "array",
+          "items": {"type": "string", "enum": ["PASS", "PASS_WITH_NOTES"]}
+        },
+        "verdict_reject": {
+          "type": "array",
+          "items": {"type": "string", "enum": ["FAIL"]}
+        },
+        "max_repair_rounds": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 10,
+          "default": 2
+        },
+        "require_evidence_for_pass": {
+          "type": "boolean",
+          "default": true
+        },
+        "require_tests_for_code_pass": {
+          "type": "boolean",
+          "default": false
+        },
+        "reject_if": {
+          "type": "array",
+          "items": {"type": "string"}
+        }
+      }
+    },
+    "budget": {
+      "type": "object",
+      "required": ["max_tokens", "max_iterations"],
+      "properties": {
+        "max_tokens": {
+          "type": "integer",
+          "minimum": 1000
+        },
+        "max_iterations": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "timeout_seconds": {
+          "type": "integer",
+          "minimum": 60
+        },
+        "max_cost_usd": {
+          "type": ["number", "null"]
+        }
+      }
+    },
+    "escalation": {
+      "type": "object",
+      "properties": {
+        "triggers": {
+          "type": "array",
+          "items": {"type": "string"}
+        },
+        "contact": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}

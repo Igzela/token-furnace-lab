@@ -1,0 +1,27 @@
+experiment: multi-agent-orchestration-001
+timestamp: "20260528-140000"
+branch: exp/hermes-perm-audit-001
+status: complete
+score: 93
+verdict: PASS
+parent_experiment: phase-e-001
+gpt_final_score: 93
+gpt_verdict: PASS
+key_findings:
+  - Supervised hybrid pipeline is best pattern for research tasks
+  - Bounded autonomy > fully autonomous
+  - Artifact-first contracts + quality gates prevent hallucination propagation
+  - Agent contract schema: 3 contracts (task, artifact, review)
+  - Quality gate runner MVP built and tested
+  - Three gate outcomes: ACCEPT (72/100), REPAIR (55/100), ESCALATE (round 2)
+  - Key insight: "build orchestrator that produces evidence-bound artifacts, not just messages"
+artifacts:
+  - model_outputs/task.md
+  - model_outputs/gpt-review.md
+  - model_outputs/agent_contract_schema.md
+  - model_outputs/architecture_comparison.md
+  - scripts/quality_gate_runner.py
+  - contracts/agent_contract.schema.json
+  - contracts/review_finding.schema.json
+  - templates/agent_contract.yaml
+next_step: orchestration-002_replay_foc_experiment
