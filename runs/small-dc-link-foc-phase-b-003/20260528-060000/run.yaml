@@ -1,0 +1,26 @@
+experiment: phase-b-003
+timestamp: "20260528-060000"
+branch: exp/hermes-perm-audit-001
+status: complete
+score: 90
+verdict: PASS
+parent_experiment: phase-b-002
+gpt_final_score: 90
+gpt_verdict: PASS
+key_findings:
+  - Three-threshold blend: detect(45°)/blend(30°)/FOC handover(20° for 200 samples)
+  - Anti-chatter: rollback alpha if θ_err > 35° during blend
+  - 189/189 configs pass (100%), max blend error 5°
+  - Implementation-ready as deterministic state machine
+artifacts:
+  - model_outputs/startup_model_v3.py
+  - model_outputs/sweep_results_v3.md
+  - model_outputs/gpt-review.md
+  - model_outputs/synthesis.md
+  - synthesis/synthesis.md
+next_step: implement_state_machine_with_logging
+not_yet_validated:
+  - real pump startup friction
+  - ADC offset and dead-time effects
+  - SMO lock on actual hardware
+  - APD precharge behavior under real bus
