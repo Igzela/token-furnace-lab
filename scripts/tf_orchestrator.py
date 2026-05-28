@@ -22,6 +22,7 @@ import re
 import shutil
 import subprocess
 import sys
+import time
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
@@ -33,6 +34,123 @@ except ImportError:
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 ACCEPT_VERDICTS = {"PASS", "PASS_WITH_NOTES"}
+
+# --- Run state (idempotent resume) ---
+
+@dataclasses.dataclass
+class RunState:
+    completed: Dict[str, Dict[str, Any]] = dataclasses.field(default_factory=dict)
+
+    def is_done(self, subproblem_id: str) -> bool:
+        return subproblem_id in self.completed
+
+    def mark_done(self, subproblem_id: str, gate_status: str, score: Optional[int], round_num: int) -> None:
+        self.completed[subproblem_id] = {
+            "gate_status": gate_status,
+            "score": score,
+            "round": round_num,
+        }
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {"completed": self.completed}
+
+
+def load_run_state(run_dir: Path) -> RunState:
+    state_path = run_dir / "run_state.json"
+    if state_path.exists():
+        data = json.loads(state_path.read_text(encoding="utf-8"))
+        return RunState(completed=data.get("completed", {}))
+    return RunState()
+
+
+def save_run_state(run_dir: Path, state: RunState) -> None:
+    state_path = run_dir / "run_state.json"
+    state_path.write_text(json.dumps(state.to_dict(), indent=2, ensure_ascii=False), encoding="utf-8")
+
+# Validator imports (lazy to avoid import errors if scripts/ is not on path)
+def _import_validators():
+    scripts_dir = Path(__file__).resolve().parent
+    sys.path.insert(0, str(scripts_dir))
+    from validate_state_machine import validate as validate_sm
+    from validate_review_artifact import validate_review
+    from validate_scope_diff import validate_scope
+    return validate_sm, validate_review, validate_scope
+
+
+def validate_artifact(artifact_path: Path, artifact_type: str) -> List[str]:
+    """Run deterministic validators on an artifact. Returns list of error strings."""
+    errors = []
+
+    if artifact_type == "state_machine":
+        try:
+            sm_validate, _, _ = _import_validators()
+            passed, sm_errors = sm_validate(artifact_path)
+            if not passed:
+                errors.extend([f"STATE_MACHINE: {e}" for e in sm_errors])
+        except Exception as e:
+            errors.append(f"STATE_MACHINE: validator error: {e}")
+
+    if artifact_type == "review":
+        try:
+            _, review_validate, _ = _import_validators()
+            passed, review_errors = review_validate(artifact_path)
+            if not passed:
+                errors.extend([f"REVIEW: {e}" for e in review_errors])
+        except Exception as e:
+            errors.append(f"REVIEW: validator error: {e}")
+
+    return errors
+
+
+def validate_scope(repo_root: Path, run_dir: Path, allowed_paths: List[str], forbidden_paths: List[str]) -> List[str]:
+    """Run scope validator on changed files in run_dir."""
+    try:
+        _, _, scope_validate = _import_validators()
+        passed, scope_errors = scope_validate(repo_root, allowed_paths, forbidden_paths)
+        if not passed:
+            return [f"SCOPE: {e}" for e in scope_errors]
+    except Exception as e:
+        return [f"SCOPE: validator error: {e}"]
+    return []
+
+
+# --- Budget ledger ---
+
+@dataclasses.dataclass
+class BudgetLedger:
+    start_time: float
+    iterations: int = 0
+    tokens_used: int = 0
+    wall_seconds: float = 0.0
+    rounds: List[Dict[str, Any]] = dataclasses.field(default_factory=list)
+
+    def tick(self, subproblem_id: str, round_num: int, gate_status: str, score: Optional[int]) -> None:
+        self.iterations += 1
+        self.wall_seconds = time.time() - self.start_time
+        self.rounds.append({
+            "subproblem": subproblem_id,
+            "round": round_num,
+            "gate_status": gate_status,
+            "score": score,
+            "wall_s": round(self.wall_seconds, 1),
+        })
+
+    def check_budget(self, max_iterations: int, max_tokens: int, timeout_seconds: int) -> Optional[str]:
+        if self.iterations >= max_iterations:
+            return f"budget_exceeded: iterations {self.iterations} >= {max_iterations}"
+        if max_tokens and self.tokens_used >= max_tokens:
+            return f"budget_exceeded: tokens {self.tokens_used} >= {max_tokens}"
+        if timeout_seconds and self.wall_seconds >= timeout_seconds:
+            return f"budget_exceeded: wall time {self.wall_seconds:.0f}s >= {timeout_seconds}s"
+        return None
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "start_time": dt.datetime.fromtimestamp(self.start_time).isoformat(timespec="seconds"),
+            "iterations": self.iterations,
+            "wall_seconds": round(self.wall_seconds, 1),
+            "rounds": self.rounds,
+        }
 
 
 @dataclasses.dataclass
@@ -280,12 +398,23 @@ def parse_review(text: str) -> Review:
 
 # --- Quality gate ---
 
-def evaluate_gate(task: Dict, review: Review, round_num: int, artifact_exists: bool) -> GateResult:
+def evaluate_gate(task: Dict, review: Review, round_num: int, artifact_exists: bool,
+                  validator_errors: Optional[List[str]] = None) -> GateResult:
     score_min = task.get("score_min", 80)
     max_repair = task.get("max_repair_rounds", 2)
 
     if not artifact_exists:
         return GateResult("REJECT", round_num, review.score, review.verdict, 0, "Artifact missing", "escalate")
+
+    # Validator errors override review — structural issues are blocking
+    if validator_errors:
+        crit_errors = [e for e in validator_errors if any(sev in e for sev in ("CRITICAL", "HIGH"))]
+        if crit_errors:
+            if round_num < max_repair:
+                return GateResult("REPAIR", round_num, review.score, review.verdict, len(crit_errors),
+                                  f"Validator errors: {'; '.join(crit_errors[:3])}", "repair")
+            return GateResult("ESCALATE", round_num, review.score, review.verdict, len(crit_errors),
+                              f"Validator errors after {round_num} rounds: {'; '.join(crit_errors[:3])}", "escalate")
 
     blocking = [f for f in review.findings if f.blocking]
 
@@ -326,6 +455,50 @@ def gate_result_yaml(result: GateResult) -> str:
     }, default_flow_style=False, sort_keys=False)
 
 
+# --- Worktree isolation ---
+
+def create_worktree(run_dir: Path, subproblem_id: str) -> Optional[Path]:
+    """Create an isolated git worktree for a subproblem. Returns worktree path or None."""
+    wt_name = f"tf-{subproblem_id}-{now_id()}"
+    wt_path = REPO_ROOT / ".claude" / "worktrees" / wt_name
+    try:
+        subprocess.run(
+            ["git", "worktree", "add", str(wt_path), "--orphan", wt_name],
+            cwd=REPO_ROOT, capture_output=True, text=True, timeout=30,
+        )
+        if wt_path.exists():
+            return wt_path
+    except Exception:
+        pass
+    return None
+
+
+def cleanup_worktree(wt_path: Optional[Path]) -> None:
+    """Remove a worktree after subproblem completes."""
+    if not wt_path or not wt_path.exists():
+        return
+    try:
+        subprocess.run(
+            ["git", "worktree", "remove", str(wt_path), "--force"],
+            cwd=REPO_ROOT, capture_output=True, text=True, timeout=30,
+        )
+    except Exception:
+        pass
+
+
+def quarantine_worktree(wt_path: Optional[Path], run_dir: Path, subproblem_id: str) -> None:
+    """On failure, quarantine worktree changes instead of discarding."""
+    if not wt_path or not wt_path.exists():
+        return
+    quarantine_dir = run_dir / "quarantine" / subproblem_id
+    quarantine_dir.mkdir(parents=True, exist_ok=True)
+    try:
+        shutil.move(str(wt_path), str(quarantine_dir / "worktree"))
+    except Exception:
+        # If move fails, at least log it
+        pass
+
+
 # --- Main orchestration loop ---
 
 def run_orchestrate(task_path: Path, mode: str, timeout: int) -> None:
@@ -337,57 +510,237 @@ def run_orchestrate(task_path: Path, mode: str, timeout: int) -> None:
     write_yaml(run_dir / "task.yaml", task)
     append_event(run_dir, {"event": "run_start", "task_id": task.get("task_id", "unknown"), "mode": mode})
 
+    budget = BudgetLedger(start_time=time.time())
+    state = load_run_state(run_dir)
+
+    use_worktree = task.get("worktree_isolation", False)
+    use_validators = task.get("run_validators", True)
+
     print(f"Run ID: {run_id}")
     print(f"Run dir: {run_dir}")
     print(f"Mode: {mode}")
+    print(f"Worktree isolation: {use_worktree}")
+    print(f"Validators: {use_validators}")
     print()
 
     for sub in task.get("subproblems", []):
+        # Resume: skip completed subproblems
+        if state.is_done(sub["id"]):
+            prev = state.completed[sub["id"]]
+            print(f"--- Subproblem: {sub['id']} --- (already done: {prev['gate_status']}, score={prev['score']})")
+            continue
+
         print(f"--- Subproblem: {sub['id']} ---")
 
-        # Dispatch agent
-        artifact_path = dispatch_agent(mode, task, sub, run_dir, timeout)
-        print(f"  Artifact: {artifact_path}")
-        append_event(run_dir, {"event": "agent_dispatched", "subproblem": sub["id"]})
+        # Check budget before starting
+        max_iter = task.get("budget", {}).get("max_iterations", 10)
+        max_tokens = task.get("budget", {}).get("max_tokens", 0)
+        budget_exceeded = budget.check_budget(max_iter, max_tokens, timeout)
+        if budget_exceeded:
+            print(f"  BUDGET EXCEEDED: {budget_exceeded}")
+            append_event(run_dir, {"event": "budget_exceeded", "detail": budget_exceeded})
+            break
 
-        if mode == "queue":
-            prompt_path = run_dir / "prompts" / f"{sub['id']}_agent_prompt.md"
-            print(f"  Prompt queued: {prompt_path}")
-            print(f"  -> Run Agent tool with subagent_type={sub.get('subagent_type', 'Plan')}")
-            print(f"  -> Write output to {artifact_path}")
+        # Worktree isolation
+        wt_path = create_worktree(run_dir, sub["id"]) if use_worktree else None
+        effective_run_dir = wt_path if wt_path else run_dir
+
+        try:
+            # Dispatch agent
+            artifact_path = dispatch_agent(mode, task, sub, effective_run_dir, timeout)
+            print(f"  Artifact: {artifact_path}")
+            append_event(run_dir, {"event": "agent_dispatched", "subproblem": sub["id"]})
+
+            if mode == "queue":
+                prompt_path = effective_run_dir / "prompts" / f"{sub['id']}_agent_prompt.md"
+                print(f"  Prompt queued: {prompt_path}")
+                print(f"  -> Run Agent tool with subagent_type={sub.get('subagent_type', 'Plan')}")
+                print(f"  -> Write output to {artifact_path}")
+                if wt_path:
+                    print(f"  -> Worktree: {wt_path}")
+                print()
+                continue
+
+            # Dispatch review
+            review_path = dispatch_review(mode, task, sub, artifact_path, effective_run_dir, timeout)
+            print(f"  Review: {review_path}")
+            append_event(run_dir, {"event": "review_dispatched", "subproblem": sub["id"]})
+
+            if mode == "queue":
+                prompt_path = effective_run_dir / "prompts" / f"{sub['id']}_review_prompt.md"
+                print(f"  Review prompt queued: {prompt_path}")
+                print()
+                continue
+
+            # Run deterministic validators
+            v_errors: List[str] = []
+            if use_validators:
+                artifact_type = sub.get("artifact_type", "")
+                v_errors = validate_artifact(artifact_path, artifact_type)
+                if v_errors:
+                    print(f"  Validator errors: {len(v_errors)}")
+                    for ve in v_errors:
+                        print(f"    {ve}")
+
+            # Parse and gate
+            review_text = review_path.read_text(encoding="utf-8")
+            review = parse_review(review_text)
+            artifact_exists = artifact_path.exists()
+
+            gate = evaluate_gate(task, review, 1, artifact_exists, validator_errors=v_errors or None)
+            gate_yaml = gate_result_yaml(gate)
+
+            gate_path = run_dir / "gate_results" / f"{sub['id']}_round_1.yaml"
+            gate_path.parent.mkdir(parents=True, exist_ok=True)
+            gate_path.write_text(gate_yaml, encoding="utf-8")
+
+            # Update budget and state
+            budget.tick(sub["id"], 1, gate.status, gate.score)
+            state.mark_done(sub["id"], gate.status, gate.score, 1)
+            save_run_state(run_dir, state)
+
+            print(f"  Gate: {gate.status} (score={gate.score}, verdict={gate.verdict})")
+            print(f"  Reason: {gate.reason}")
+            append_event(run_dir, {"event": "gate_evaluated", "subproblem": sub["id"],
+                                   "status": gate.status, "score": gate.score,
+                                   "validator_errors": len(v_errors)})
             print()
-            continue
 
-        # Dispatch review
-        review_path = dispatch_review(mode, task, sub, artifact_path, run_dir, timeout)
-        print(f"  Review: {review_path}")
-        append_event(run_dir, {"event": "review_dispatched", "subproblem": sub["id"]})
+            # Cleanup worktree on success
+            if wt_path:
+                # Copy artifacts back to run_dir before cleanup
+                if artifact_path.exists():
+                    dest = run_dir / sub["artifact_path"]
+                    dest.parent.mkdir(parents=True, exist_ok=True)
+                    shutil.copy2(artifact_path, dest)
+                if review_path.exists():
+                    dest = run_dir / sub["review_path"]
+                    dest.parent.mkdir(parents=True, exist_ok=True)
+                    shutil.copy2(review_path, dest)
+                cleanup_worktree(wt_path)
 
-        if mode == "queue":
-            prompt_path = run_dir / "prompts" / f"{sub['id']}_review_prompt.md"
-            print(f"  Review prompt queued: {prompt_path}")
-            print()
-            continue
+        except Exception as e:
+            # Rollback: quarantine worktree changes
+            print(f"  ERROR: {e}")
+            append_event(run_dir, {"event": "subproblem_error", "subproblem": sub["id"], "error": str(e)})
+            if wt_path:
+                quarantine_worktree(wt_path, run_dir, sub["id"])
+                print(f"  Worktree quarantined to {run_dir / 'quarantine' / sub['id']}")
+            raise
 
-        # Parse and gate
-        review_text = review_path.read_text(encoding="utf-8")
-        review = parse_review(review_text)
-        artifact_exists = artifact_path.exists()
+    # Write budget ledger
+    write_yaml(run_dir / "budget_ledger.yaml", budget.to_dict())
+    append_event(run_dir, {"event": "run_complete", "iterations": budget.iterations})
 
-        gate = evaluate_gate(task, review, 1, artifact_exists)
-        gate_yaml = gate_result_yaml(gate)
+    # Generate closeout
+    generate_closeout(run_dir)
 
-        gate_path = run_dir / "gate_results" / f"{sub['id']}_round_1.yaml"
-        gate_path.parent.mkdir(parents=True, exist_ok=True)
-        gate_path.write_text(gate_yaml, encoding="utf-8")
+    print(f"Done. {budget.iterations} iterations, {budget.wall_seconds:.1f}s wall time.")
+    print(f"Budget ledger: {run_dir / 'budget_ledger.yaml'}")
 
-        print(f"  Gate: {gate.status} (score={gate.score}, verdict={gate.verdict})")
-        print(f"  Reason: {gate.reason}")
-        append_event(run_dir, {"event": "gate_evaluated", "subproblem": sub["id"], "status": gate.status, "score": gate.score})
-        print()
 
-    append_event(run_dir, {"event": "run_complete"})
-    print("Done.")
+def generate_closeout(run_dir: Path) -> None:
+    """Generate final_verdict.yaml and synthesis.md at end of run."""
+    task_path = run_dir / "task.yaml"
+    budget_path = run_dir / "budget_ledger.yaml"
+    state_path = run_dir / "run_state.json"
+
+    if not task_path.exists():
+        return
+
+    task = load_yaml(task_path)
+    budget = load_yaml(budget_path) if budget_path.exists() else {}
+    state = load_run_state(run_dir)
+
+    # Collect gate results
+    gate_results = []
+    gate_dir = run_dir / "gate_results"
+    if gate_dir.exists():
+        for gf in sorted(gate_dir.glob("*.yaml")):
+            gate_results.append(load_yaml(gf))
+
+    # Determine overall verdict
+    statuses = [gr.get("status", "") for gr in gate_results]
+    if all(s == "ACCEPT" for s in statuses):
+        overall = "PASS"
+    elif any(s == "REJECT" for s in statuses):
+        overall = "FAIL"
+    elif any(s == "ESCALATE" for s in statuses):
+        overall = "ESCALATE"
+    else:
+        overall = "PASS_WITH_NOTES"
+
+    # Write final_verdict.yaml
+    verdict_data = {
+        "run_id": run_dir.name,
+        "task_id": task.get("task_id", "unknown"),
+        "overall_verdict": overall,
+        "subproblems": {
+            sub_id: {
+                "gate_status": info.get("gate_status"),
+                "score": info.get("score"),
+            }
+            for sub_id, info in state.completed.items()
+        },
+        "budget": {
+            "iterations": budget.get("iterations", 0),
+            "wall_seconds": budget.get("wall_seconds", 0),
+        },
+        "generated_at": dt.datetime.now().isoformat(timespec="seconds"),
+    }
+    write_yaml(run_dir / "final_verdict.yaml", verdict_data)
+
+    # Write synthesis.md
+    scores = [gr.get("score") for gr in gate_results if gr.get("score")]
+    avg_score = round(sum(scores) / len(scores)) if scores else 0
+
+    synthesis_lines = [
+        f"# Synthesis: {task.get('title', task.get('task_id', 'unknown'))}",
+        "",
+        f"**Overall verdict**: {overall}",
+        f"**Average score**: {avg_score}/100",
+        f"**Subproblems**: {len(state.completed)} completed",
+        f"**Iterations**: {budget.get('iterations', 0)}",
+        f"**Wall time**: {budget.get('wall_seconds', 0):.1f}s",
+        "",
+        "## Gate Results",
+        "",
+    ]
+    for gr in gate_results:
+        synthesis_lines.append(
+            f"- **{gr.get('round', '?')}**: {gr.get('status', '?')} "
+            f"(score={gr.get('score', '?')}, verdict={gr.get('verdict', '?')})"
+        )
+        synthesis_lines.append(f"  - {gr.get('reason', 'no reason')}")
+
+    synthesis_lines.extend([
+        "",
+        "## Budget",
+        "",
+        f"- Start: {budget.get('start_time', 'unknown')}",
+        f"- Iterations: {budget.get('iterations', 0)}",
+        f"- Wall seconds: {budget.get('wall_seconds', 0)}",
+    ])
+
+    if budget.get("rounds"):
+        synthesis_lines.extend(["", "## Round Details", ""])
+        for r in budget["rounds"]:
+            synthesis_lines.append(
+                f"- {r.get('subproblem', '?')} round {r.get('round', '?')}: "
+                f"{r.get('gate_status', '?')} (score={r.get('score', '?')})"
+            )
+
+    synthesis_lines.extend([
+        "",
+        "## Next Experiment",
+        "",
+        "TBD — derive from findings and verdict.",
+        "",
+    ])
+
+    (run_dir / "synthesis.md").write_text("\n".join(synthesis_lines), encoding="utf-8")
+    print(f"Closeout generated: {run_dir / 'final_verdict.yaml'}")
+    print(f"                  {run_dir / 'synthesis.md'}")
 
 
 def run_gate(run_dir: Path, round_num: int) -> None:
@@ -406,7 +759,13 @@ def run_gate(run_dir: Path, round_num: int) -> None:
             continue
 
         review = parse_review(review_path.read_text(encoding="utf-8"))
-        gate = evaluate_gate(task, review, round_num, artifact_path.exists())
+
+        # Run validators if configured
+        v_errors: List[str] = []
+        if task.get("run_validators", True):
+            v_errors = validate_artifact(artifact_path, sub.get("artifact_type", ""))
+
+        gate = evaluate_gate(task, review, round_num, artifact_path.exists(), validator_errors=v_errors or None)
 
         gate_path = run_dir / "gate_results" / f"{sub['id']}_round_{round_num}.yaml"
         gate_path.parent.mkdir(parents=True, exist_ok=True)
@@ -416,7 +775,23 @@ def run_gate(run_dir: Path, round_num: int) -> None:
         print(f"  Status: {gate.status}")
         print(f"  Score: {gate.score}, Verdict: {gate.verdict}")
         print(f"  Reason: {gate.reason}")
+        if v_errors:
+            print(f"  Validator errors: {len(v_errors)}")
+            for ve in v_errors:
+                print(f"    {ve}")
         print()
+
+
+def run_validate(artifact_path: Path, artifact_type: str) -> None:
+    """Run validators on a single artifact."""
+    errors = validate_artifact(artifact_path, artifact_type)
+    if errors:
+        print(f"FAIL: {artifact_path.name}")
+        for e in sorted(errors):
+            print(f"  {e}")
+        sys.exit(1)
+    else:
+        print(f"PASS: {artifact_path.name} (all validators passed)")
 
 
 def main():
@@ -432,12 +807,24 @@ def main():
     gate_p.add_argument("run_dir", type=Path)
     gate_p.add_argument("round_num", type=int, nargs="?", default=1)
 
+    validate_p = sub.add_parser("validate", help="Run validators on an artifact")
+    validate_p.add_argument("artifact_path", type=Path)
+    validate_p.add_argument("--type", dest="artifact_type", default="",
+                            help="Artifact type (state_machine, review, etc.)")
+
+    closeout_p = sub.add_parser("closeout", help="Generate closeout for existing run")
+    closeout_p.add_argument("run_dir", type=Path)
+
     args = parser.parse_args()
 
     if args.command == "run":
         run_orchestrate(args.task_yaml, args.mode, args.timeout)
     elif args.command == "gate":
         run_gate(args.run_dir, args.round_num)
+    elif args.command == "validate":
+        run_validate(args.artifact_path, args.artifact_type)
+    elif args.command == "closeout":
+        generate_closeout(args.run_dir)
     else:
         parser.print_help()
 

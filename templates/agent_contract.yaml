@@ -49,7 +49,7 @@ agent:
 
 artifact:
   artifact_id: "main-output"
-  artifact_type: derivation
+  artifact_type: derivation  # derivation, state_machine, review, design_doc
   file_path: "model_outputs/main_output.md"
   required_sections:
     - "## Goal"
@@ -58,6 +58,7 @@ artifact:
     - "## Conclusion"
   evidence_required: true
   schema_path: null
+  validators: []  # e.g., ["state_machine", "review"]
 
 review:
   required: true
@@ -75,6 +76,8 @@ quality_gate:
   max_repair_rounds: 2
   require_evidence_for_pass: true
   require_tests_for_code_pass: false
+  run_validators: true
+  worktree_isolation: false
   reject_if:
     - accepted_finding_without_evidence
     - missing_required_section
