@@ -14,8 +14,25 @@
 | APD_DEGRADED | APD not functioning | Running | Active | FOC without APD, topology-aware derate |
 | FAULT_LATCHED | Hard fault, requires reset | Stopped | Disabled | All outputs zero |
 | RESTART_PENDING | Attempting restart | Stopped | Disabled | Cooldown timer running |
+| PRECHARGE | DC-link voltage ramp-up | Stopped | Disabled | Precharge relay control, Vdc monitoring |
+| ALIGN | Rotor alignment pulse | Stopped | Active | Fixed current vector, fixed angle |
 
 ## Fault-State Transition Matrix
+
+### UNIVERSAL (all active and degraded states)
+
+```
+UNIVERSAL:
+  oc_trip              → FAULT_LATCHED + PWM disable (immediate, hardware trip-zone)
+  gate_driver_fault    → FAULT_LATCHED + PWM disable
+  pwm_tripzone         → FAULT_LATCHED + PWM disable
+  emergency_stop       → FAULT_LATCHED + PWM disable
+  watchdog_reset       → FAULT_LATCHED
+  adc_invalid          → FAULT_LATCHED + PWM disable
+  over_temperature     → FAULT_LATCHED + PWM disable
+```
+
+These transitions apply from every state where PWM is active. They are not repeated per-state below.
 
 ### Active States (PWM enabled)
 
@@ -91,6 +108,17 @@ RESTART_PENDING:
   cooldown_done + speed_zero → PRECHARGE → ALIGN (cold start)
   cooldown_done + speed_est > 0 → FLYING_RESTART
   retry_3_failed       → FAULT_LATCHED
+
+PRECHARGE:
+  vdc_ready            → ALIGN (Vdc > target, e.g., 270V)
+  timeout_500ms        → FAULT_LATCHED (precharge failed)
+  oc_trip              → FAULT_LATCHED + PWM disable
+
+ALIGN:
+  align_done           → IF_RAMP (flux established, 200ms elapsed)
+  timeout_200ms        → RESTART_PENDING (retry alignment)
+  oc_trip              → FAULT_LATCHED + PWM disable
+  retry_3_failed       → FAULT_LATCHED
 ```
 
 ## Recovery Strategies by Fault Type
@@ -117,6 +145,15 @@ Phase 3 (>100ms): SAFETY — do not keep active FOC on frozen theta
 ```
 
 **Why extrapolated-theta bridge, not freeze**: At 4000rpm, frozen angle is only valid for ~1 control cycle. Extrapolation is accurate for 10-20ms at moderate speed. Long freeze (2s) is unsafe.
+
+**Extrapolation failure detection**:
+```
+- Extrapolation update rate = PWM frequency (10kHz)
+- If |θ_extrapolated - θ_measured| > 60° when observer partially relocks:
+  → reject extrapolation → PASSIVE_COAST immediately
+- If ω_last < 100 rpm (extrapolation unreliable at low speed):
+  → reduce to 5ms max bridge → PASSIVE_COAST
+```
 
 ### 2. Vdc Low (FOC_NORMAL → FOC_DERATED)
 
@@ -153,6 +190,8 @@ Single-phase input:
 ```
 
 **Why topology-dependent**: Three-phase 22µF works without APD (derivation-002, derivation-003). Single-phase needs APD for DC-link stability. Fixed 60% derate is wrong.
+
+**Water-hammer risk note**: If pump installation has water-hammer risk (vertical riser, no check valve), consider CONTROLLED_DECEL before PASSIVE_COAST for single-phase APD fault. Add system-level config flag: `apd_1ph_coast_mode = {IMMEDIATE, CONTROLLED}` with default IMMEDIATE.
 
 ### 4. SVPWM Saturation (FOC_NORMAL → FOC_DERATED)
 
@@ -306,14 +345,17 @@ RESTART_PENDING:
 | 17 | ADC_FAULT | Critical | Hard fault | No |
 | 18 | OVER_TEMP | Critical | Hard fault | No |
 | 19 | EMERGENCY_STOP | Critical | Hard fault | Manual reset only |
+| 20 | PRECHARGE_FAIL | Critical | Manual | No (precharge timeout) |
+| 21 | ALIGN_FAIL | High | Recoverable | 3 retries (alignment timeout) |
 
 ## Timing Constants
 
 | Parameter | Value | Rationale |
 |-----------|-------|-----------|
 | observer_detect | 5ms (50 samples @ 10kHz) | Fast detection, safe margin |
-| observer_extrapolate_max | 10-20ms | Frozen θ drift too fast at high speed |
-| observer_recovery_window | 0.5-2s | Total timeout for OBSERVER_DEGRADED state |
+| observer_extrapolate_max | 10-20ms | Extrapolated θ drift too fast at high speed |
+| observer_recovery_phase2 | 10-100ms | Recovery check window after extrapolation bridge |
+| observer_total_timeout | 100ms | Max time in OBSERVER_DEGRADED before PASSIVE_COAST |
 | svpwm_sat_short | 50ms → derate | Early intervention |
 | svpwm_sat_long | 500ms → coast | Saturation not clearing = problem |
 | iq_clamp_derate | 2s | Reasonable for pump load |
@@ -326,3 +368,7 @@ RESTART_PENDING:
 | restart_cooldown | 2s | Thermal protection |
 | passive_coast_timeout | 5s | Motor should stop in 5s |
 | flying_restart_timeout | 3s | Re-sync attempt limit |
+| precharge_timeout | 500ms | 22µF charges in <100ms through限流 resistor; 5x margin |
+| align_duration | 200ms | 1-2 electrical periods at standstill, sufficient for flux buildup |
+| if_ramp_duration | 300ms | Matches phase-b-001/002 I-f ramp specification |
+| observer_check_window | 100ms | Verify observer lock before blend, matches phase-b-003 |
