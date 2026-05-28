@@ -1,0 +1,33 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Decision",
+  "description": "Gate decision output from confidence-calibrated decision policy",
+  "type": "object",
+  "required": ["verdict", "reason", "confidence_level", "conditions_met", "conditions_failed"],
+  "properties": {
+    "verdict": {
+      "type": "string",
+      "enum": ["ACCEPT", "REPAIR", "ESCALATE", "REJECT"],
+      "description": "Final gate decision"
+    },
+    "reason": {
+      "type": "string",
+      "description": "Human-readable reason for the decision"
+    },
+    "confidence_level": {
+      "type": "string",
+      "enum": ["HIGH", "MEDIUM", "LOW"],
+      "description": "Computed confidence level"
+    },
+    "conditions_met": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Policy conditions that were satisfied"
+    },
+    "conditions_failed": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Policy conditions that were not satisfied"
+    }
+  }
+}

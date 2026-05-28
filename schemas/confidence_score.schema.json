@@ -1,0 +1,50 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "ConfidenceScore",
+  "description": "Synthetic confidence score from weighted multi-source evaluation",
+  "type": "object",
+  "required": ["reviewer_confidence", "evidence_quality", "validator_agreement", "cross_reviewer_convergence", "repair_history", "total", "level"],
+  "properties": {
+    "reviewer_confidence": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 100,
+      "description": "Average reviewer-stated confidence mapped to 0-100 scale (weight: 0.20)"
+    },
+    "evidence_quality": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 100,
+      "description": "Percentage of findings with valid evidence_path (weight: 0.25)"
+    },
+    "validator_agreement": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 100,
+      "description": "100 if validators pass, 0 if any fail (weight: 0.25)"
+    },
+    "cross_reviewer_convergence": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 100,
+      "description": "100 if all reviewers agree on verdict, 60 if ≤2 disagree, 20 if >2 (weight: 0.15)"
+    },
+    "repair_history": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 100,
+      "description": "100 if no repair rounds, 70 if <max, 30 if max reached (weight: 0.15)"
+    },
+    "total": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 100,
+      "description": "Weighted sum of all components"
+    },
+    "level": {
+      "type": "string",
+      "enum": ["HIGH", "MEDIUM", "LOW"],
+      "description": "HIGH ≥ 80, MEDIUM ≥ 60, LOW < 60"
+    }
+  }
+}
