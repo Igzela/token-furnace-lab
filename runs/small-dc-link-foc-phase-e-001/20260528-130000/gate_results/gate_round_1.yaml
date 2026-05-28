@@ -1,0 +1,13 @@
+status: ACCEPT
+round: 1
+score: 72
+verdict: PASS_WITH_NOTES
+blocking_findings: []
+scope_violations: []
+budget_status:
+  tokens_used: 0
+  iterations_used: 1
+next_action:
+  type: accept
+  reason: Score 72, verdict PASS_WITH_NOTES, no blocking findings
+reason: Score 72, verdict PASS_WITH_NOTES, no blocking findings

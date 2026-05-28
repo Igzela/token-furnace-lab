@@ -1,6 +1,6 @@
 # Failure-Injection Test Report
 
-**Date**: 2026-05-28 10:42
+**Date**: 2026-05-28 11:26
 **Total cases**: 10
 **Passed**: 10
 **Failed**: 0
@@ -18,7 +18,7 @@
 |------|----------|--------|--------|--------|
 | F001_missing_artifact | REJECT | REJECT | Artifact missing | PASS |
 | F002_missing_score | REPAIR | REPAIR | Score 0 < 70 | PASS |
-| F003_invalid_verdict | REPAIR | REPAIR | Verdict FAIL not in {'PASS_WITH_NOTES', 'PASS'} | PASS |
+| F003_invalid_verdict | REPAIR | REPAIR | Verdict FAIL not in {'PASS', 'PASS_WITH_NOTES'} | PASS |
 | F004_blocking_high_open | REPAIR | REPAIR | Evidence errors: HIGH: Blocking finding F01 has no evidence_... | PASS |
 | F005_no_evidence | REPAIR | REPAIR | Evidence errors: HIGH: Blocking finding F01 has no evidence_... | PASS |
 | F006_evidence_not_exist | REPAIR | REPAIR | Evidence errors: HIGH: Blocking finding F01 evidence_path no... | PASS |

@@ -1,6 +1,6 @@
 # Synthesis: Orchestration-003 Failure-Injection Benchmark
 
-**Date**: 2026-05-28 10:42
+**Date**: 2026-05-28 11:26
 **Total cases**: 10
 **Passed**: 10/10
 **False accepts**: 0
@@ -19,7 +19,7 @@
 
 - **F001_missing_artifact**: REJECT (PASS) — Artifact missing
 - **F002_missing_score**: REPAIR (PASS) — Score 0 < 70
-- **F003_invalid_verdict**: REPAIR (PASS) — Verdict FAIL not in {'PASS_WITH_NOTES', 'PASS'}
+- **F003_invalid_verdict**: REPAIR (PASS) — Verdict FAIL not in {'PASS', 'PASS_WITH_NOTES'}
 - **F004_blocking_high_open**: REPAIR (PASS) — Evidence errors: HIGH: Blocking finding F01 has no evidence_path
 - **F005_no_evidence**: REPAIR (PASS) — Evidence errors: HIGH: Blocking finding F01 has no evidence_path
 - **F006_evidence_not_exist**: REPAIR (PASS) — Evidence errors: HIGH: Blocking finding F01 evidence_path not found: nonexistent/path/model.md

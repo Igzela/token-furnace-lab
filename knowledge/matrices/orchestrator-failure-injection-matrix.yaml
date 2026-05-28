@@ -21,7 +21,7 @@ cases:
   expected: REPAIR
   actual: REPAIR
   passed: true
-  reason: Verdict FAIL not in {'PASS_WITH_NOTES', 'PASS'}
+  reason: Verdict FAIL not in {'PASS', 'PASS_WITH_NOTES'}
 - id: F004_blocking_high_open
   expected: REPAIR
   actual: REPAIR

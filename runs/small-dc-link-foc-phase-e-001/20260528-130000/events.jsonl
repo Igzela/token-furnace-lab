@@ -1,0 +1,2 @@
+{"round": 1, "status": "REJECT", "score": null, "verdict": null, "reason": "Could not parse review score/verdict"}
+{"round": 1, "status": "ACCEPT", "score": 72, "verdict": "PASS_WITH_NOTES", "reason": "Score 72, verdict PASS_WITH_NOTES, no blocking findings"}

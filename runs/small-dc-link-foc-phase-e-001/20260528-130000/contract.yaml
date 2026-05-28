@@ -1,0 +1,81 @@
+version: "1.0"
+contract_id: "phase-e-001"
+run_id: "20260528-130000"
+parent_task_id: null
+
+task:
+  objective: "Design fault-state transition matrix and recovery strategies for sensorless FOC water pump drive"
+  scope:
+    target_repo: "token-furnace-lab"
+    allowed_paths:
+      - "runs/small-dc-link-foc-phase-e-001/20260528-130000/"
+    forbidden_paths:
+      - ".env"
+      - "secrets/"
+    allowed_actions:
+      - read
+      - write
+      - edit
+    forbidden_actions:
+      - network
+      - destructive_ops
+  non_goals:
+    - "No hardware control code"
+    - "No destructive operations"
+  expected_outputs:
+    - "model_outputs/fault_recovery_model.md"
+    - "model_outputs/gpt-review.md"
+
+agent:
+  role: implementer
+  model_hint: null
+  tools_allowed:
+    - read
+    - edit
+    - write
+  execution_mode: foreground
+  worktree: null
+
+artifact:
+  artifact_id: "fault-recovery-model"
+  artifact_type: plan
+  file_path: "model_outputs/fault_recovery_model.md"
+  required_sections:
+    - "State Definitions"
+    - "Fault-State Transition Matrix"
+    - "Recovery Strategies"
+  evidence_required: true
+  schema_path: null
+
+review:
+  required: true
+  reviewer_role: gpt_reviewer
+  review_output_path: "model_outputs/gpt-review.md"
+  finding_schema_required: true
+
+quality_gate:
+  score_min: 70
+  verdict_accept:
+    - PASS
+    - PASS_WITH_NOTES
+  verdict_reject:
+    - FAIL
+  max_repair_rounds: 2
+  require_evidence_for_pass: true
+  require_tests_for_code_pass: false
+  reject_if:
+    - accepted_finding_without_evidence
+    - missing_required_section
+    - score_below_min
+
+budget:
+  max_tokens: 100000
+  max_iterations: 3
+  timeout_seconds: 300
+
+escalation:
+  triggers:
+    - low_confidence
+    - reviewer_disagreement
+    - high_severity_unresolved
+  contact: human
