@@ -94,6 +94,7 @@ Active Research — 个人研究项目，迭代中，无外部用户。
   - orchestration-002: mock execution (100/100 PASS)
   - orchestration-003: schema enforcement + failure injection (10/10 PASS)
   - orchestration-004: real multi-model cross-audit (77/100 PASS_WITH_NOTES — Claude 78 + GPT 76, GPT found 2 additional HIGH blocking findings)
+  - orchestration-005: review fusion + multi-reviewer gate (COMPLETE — findings union, blocking override, disagreement tracking)
 
 ### Key Decisions (FOC derivation series)
 

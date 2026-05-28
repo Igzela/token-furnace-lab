@@ -17,6 +17,7 @@
 | Phase 5 | Multi-agent orchestration | multi-agent-orchestration | COMPLETE/PASS | 4313909 |
 | Phase 6 | Schema enforcement + failure injection | orchestration-003 | COMPLETE/PASS (10/10) | eec471a |
 | Phase 7 | Real multi-model cross-audit | orchestration-004 | COMPLETE/PASS_WITH_NOTES | 11bd806 |
+| Phase 8 | Review fusion + multi-reviewer gate | orchestration-005 | COMPLETE/PASS | 95f11b6 |
 
 ## Platform Consolidation
 
@@ -49,6 +50,8 @@ Capabilities validated:
 - **E2E test**: queue → subagent → gate → ACCEPT (82/100)
 - **Real cross-audit**: Claude reviews model, GPT cross-reviews Claude's artifact (orchestration-004)
 - **JSON-block parsing**: parse_review() and validators handle structured JSON output from agents
+- **Review fusion**: Merge multiple reviewer outputs into fused gate decision (review_fusion.py)
+- **Fused gate**: evaluate_fused_gate() applies priority rules across merged findings
 
 ## Reusable Templates
 
