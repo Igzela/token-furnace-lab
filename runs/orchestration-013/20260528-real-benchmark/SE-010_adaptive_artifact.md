@@ -1,45 +1,47 @@
-## Validation Report: `claude_review_round_1.md`
+## Validation Report
+
+**Schema**: `contracts/review_artifact.schema.json`
+**Artifact**: `runs/orchestration-006/20260528-120000/artifacts/claude_review_round_1.md`
 
 ### Field-by-Field Check
 
-| Field | Required | Type | Value | Status |
-|-------|----------|------|-------|--------|
-| `review_id` | yes | string (minLength 1) | `"claude-review-round-1-phase-e-001-v3-20260528"` | PASS |
-| `reviewer_role` | no | string | `"claude_code_architect"` | PASS |
-| `score` | yes | integer (0–100) | `86` | PASS |
-| `verdict` | yes | enum | `"PASS_WITH_NOTES"` | PASS |
-| `confidence` | no | enum | `"HIGH"` | PASS |
-| `findings` | yes | array | 6 items | PASS |
-| `final_recommendation` | yes | enum | `"REPAIR"` | PASS |
-| `additionalProperties` | — | false | no extra keys at top level | PASS |
+| Field | Type | Required | Status | Notes |
+|---|---|---|---|---|
+| `review_id` | string | ✅ | **PASS** | Non-empty string |
+| `reviewer_role` | string (optional) | — | **PASS** | Present, valid string |
+| `score` | integer 0-100 | ✅ | **PASS** | `86` |
+| `verdict` | enum | ✅ | **PASS** | `PASS_WITH_NOTES` |
+| `confidence` | enum | ✅ | **PASS** | `HIGH` |
+| `findings` | array | ✅ | **PASS** | 6 items |
+| `final_recommendation` | enum | ✅ | **PASS** | `REPAIR` |
+| `additionalProperties` | — | ✅ | **PASS** | No extra fields present |
 
-### Finding Items Check (all 6)
+### Findings Array Validation (per-item required: `id`, `severity`, `blocking`, `claim`)
 
-| # | id | severity | blocking | claim | category | status | evidence_path | correction | Status |
-|---|----|----------|----------|-------|----------|--------|---------------|------------|--------|
-| 1 | F-R1 | MEDIUM | true | present | — | — | present | present | PASS |
-| 2 | F-R2 | MEDIUM | true | present | — | — | present | present | PASS |
-| 3 | F-R3 | LOW | false | present | — | — | present | present | PASS |
-| 4 | F-R4 | LOW | false | present | — | — | present | present | PASS |
-| 5 | F-R5 | LOW | false | present | — | — | present | present | PASS |
-| 6 | F-R6 | LOW | false | present | — | — | present | present | PASS |
+| Finding | id | severity | blocking | claim | category | status | evidence_path | correction | Verdict |
+|---|---|---|---|---|---|---|---|---|---|
+| F-R1 | ✅ | MEDIUM ✅ | bool ✅ | ✅ | — | — | ✅ | ✅ | **PASS** |
+| F-R2 | ✅ | MEDIUM ✅ | bool ✅ | ✅ | — | — | ✅ | ✅ | **PASS** |
+| F-R3 | ✅ | LOW ✅ | bool ✅ | ✅ | — | — | ✅ | ✅ | **PASS** |
+| F-R4 | ✅ | LOW ✅ | bool ✅ | ✅ | — | — | ✅ | ✅ | **PASS** |
+| F-R5 | ✅ | LOW ✅ | bool ✅ | ✅ | — | — | ✅ | ✅ | **PASS** |
+| F-R6 | ✅ | LOW ✅ | bool ✅ | ✅ | — | — | ✅ | ✅ | **PASS** |
 
-All required fields present. All types correct. All enum values valid. No additional properties.
+### Schema Conformance Summary
 
----
+All 5 required fields present. All field types valid. All enum values within allowed sets. No `additionalProperties` violations. The JSON block is **fully conformant** with the schema.
 
-### Findings
+### Semantic Note
 
-- **[LOW]** `status` field omitted on all 6 findings — optional per schema, but its absence means downstream consumers cannot distinguish open/addressed/dismissed without external context.
-- **[LOW]** `category` field omitted on all 6 findings — optional per schema, but present in other review artifacts in this repo (e.g., `structural`, `consistency`). Omitting reduces filterability.
-- **[INFO]** `blocking: true` on MEDIUM-severity findings (F-R1, F-R2) — valid per schema (no cross-field constraint), and justified by review reasoning ("same structural class as F01/G02"). Consistent with repo gate priority rules (blocking findings override score).
+All 6 findings are marked `blocking: true`, including the 4 LOW-severity ones. This is schema-valid (boolean field, no severity-gating rule), but semantically unusual — LOW findings are typically informational/non-blocking. The gate logic should catch this: with 6 blocking findings, the gate would force REPAIR regardless of score, which aligns with the `final_recommendation: "REPAIR"`.
 
 ---
 
-**Score: 95**
+**Score: 100**
 **Verdict: PASS**
 **Confidence: HIGH**
 
-**Final Recommendation: ACCEPT**
+**Findings:**
+- [LOW] All 6 findings marked `blocking: true` including 4 LOW-severity items — schema-valid but may indicate reviewer over-flagging or missing a severity-blocking policy in the schema itself
 
-The JSON block is fully schema-compliant. All required fields present, types correct, enums valid, no extra properties. The two missing optional fields (`status`, `category`) are worth standardizing across the artifact set but don't constitute a schema violation.
+**Final Recommendation: ACCEPT** — artifact is schema-conformant; the blocking-flag semantics are a policy concern, not a schema violation.

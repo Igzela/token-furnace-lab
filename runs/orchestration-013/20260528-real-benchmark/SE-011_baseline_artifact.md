@@ -1,54 +1,31 @@
-## Delta Report: `orchestrator-quality-gate-policy.md` vs `worker-gate-conformance.md`
+## Delta Report: orchestrator-quality-gate-policy.md vs worker-gate-conformance.md
 
-**Score: 78/100**
+**Score: 62/100**
 **Verdict: PASS_WITH_NOTES**
 **Confidence: HIGH**
 
 ---
 
-### Summary
+### Analysis
 
-These two documents operate at different abstraction levels and cover different domains. `orchestrator-quality-gate-policy.md` is a formal gate policy for the orchestrator's review pipeline. `worker-gate-conformance.md` is a knowledge note about a conformance bug discovered in the worker daemon's gate logic. There are no direct contradictions, but there are structural gaps and one terminology disconnect.
+These two documents operate at **different abstraction levels** — one is a gate policy definition, the other is a lessons-learned wiki note. They aren't designed to be directly compared, but they should reference each other and maintain consistent terminology. They currently do neither.
 
 ---
 
 ### Findings
 
-- **[MEDIUM] No shared definition of "blocking finding"**
-  - `orchestrator-quality-gate-policy.md:11` uses "Blocking findings?" as a gate priority level but never defines what constitutes a blocking finding beyond the test matrix examples (F004, F005).
-  - `worker-gate-conformance.md:9` mentions "6 critical checks" the worker was missing but does not enumerate them or map them to the orchestrator's blocking finding taxonomy.
-  - **Gap**: A worker-side gate could reject on a finding that the orchestrator doesn't classify as blocking, or vice versa. No shared severity vocabulary links the two.
+- **[MEDIUM] No cross-references between documents.** `orchestrator-quality-gate-policy.md` lists `[[ER-schema-invalid-cannot-pass]]` and `[[ER-validator-fail-overrides-review-score]]` as related rules (lines 62-63), but does not reference `worker-gate-conformance`. Conversely, `worker-gate-conformance.md` mentions "6 critical checks" missing from worker (line 9) but never references the orchestrator's gate priority rules that define what "critical" means in the gate context.
 
-- **[MEDIUM] Validator coverage asymmetry**
-  - `orchestrator-quality-gate-policy.md:38-44` lists 5 explicit validators (state machine, review artifact, scope diff, artifact schema, evidence).
-  - `worker-gate-conformance.md:9` references "6 critical checks" in the worker that were missing — none of these map to the orchestrator's 5 validators. The worker checks appear to be operational/safety checks (live-enable flags, secret redaction, rollback plan validation), not review-pipeline validators.
-  - **Gap**: The orchestrator policy does not mention worker-side safety gates at all. A finding could pass the orchestrator's quality gate but fail the worker's safety gate, or the worker could be missing checks the orchestrator assumes exist.
+- **[MEDIUM] Terminology mismatch on severity levels.** The orchestrator policy defines specific severity levels per validator type: `CRITICAL` and `HIGH` (lines 39-44). The worker doc says "6 critical checks" (line 9) without specifying whether these map to the orchestrator's `CRITICAL` severity (which triggers REPAIR/ESALATE at priority 2) or are "critical" in a colloquial sense. This ambiguity could lead to misclassification if someone ports the worker findings into the orchestrator gate.
 
-- **[LOW] Terminology: "gate" means different things**
-  - `orchestrator-quality-gate-policy.md` uses "gate" to mean: a deterministic pass/fail check on review artifacts before accepting a run.
-  - `worker-gate-conformance.md` uses "gate" to mean: an operational safety check before the worker daemon executes an action (e.g., arm gate validation, live-enable flag).
-  - **Note**: Not a contradiction, but a reader unfamiliar with the codebase could conflate the two. A glossary or explicit scope statement at the top of each document would help.
+- **[LOW] No shared test matrix.** The orchestrator policy defines a 10-case failure-injection matrix (F001-F010, lines 19-33). The worker doc references C001-C005 test cases (line 13) but these are not listed, and there's no indication whether they overlap with or are subsets of the orchestrator's matrix. A reader cannot determine if the worker conformance tests cover the same failure modes.
 
-- **[LOW] `sanitize_text` / secret redaction not in orchestrator policy**
-  - `worker-gate-conformance.md:19` identifies `sanitize_text` as "the right place for defense-in-depth secret redaction."
-  - `orchestrator-quality-gate-policy.md` does not mention secret redaction as a gate check or validator.
-  - **Gap**: If a review artifact contains secrets, the orchestrator gate would accept it (all 5 validators pass). The worker gate would catch it. This is an implicit two-layer defense, but it's undocumented in the orchestrator policy.
+- **[LOW] Scope boundary undocumented.** The orchestrator policy says validators are "deterministic and cheap" (line 54) and defines 5 validator types (lines 38-44). The worker doc identifies `flags_from_env()` as "single source of truth for LIVE_ENABLED state" (line 17) — this is a runtime configuration gate, not a validator in the orchestrator's sense. The boundary between "orchestrator validator" and "worker gate check" is not formally defined anywhere.
 
-- **[LOW] `flags_from_env()` single-source-of-truth not referenced by orchestrator**
-  - `worker-gate-conformance.md:17` establishes `flags_from_env()` as the single source of truth for `LIVE_ENABLED` state.
-  - The orchestrator policy has no equivalent "single source of truth" principle for its gate inputs (score, verdict, evidence paths).
-  - **Note**: Minor — the orchestrator reads structured artifacts, not env flags, so the pattern doesn't directly apply. But the principle (one canonical input source) could strengthen the orchestrator's design documentation.
-
----
-
-### What's Consistent
-
-- Both documents agree that deterministic checks should override non-deterministic ones (orchestrator: "Validators are deterministic and cheap" at line 54; worker: "thread flags as a parameter rather than reading env inside gate functions" at line 18 — both favor testable, deterministic inputs).
-- Both documents are internally consistent within their own scope.
-- No rule in one document contradicts a rule in the other.
+- **[LOW] Missing integration point.** The worker doc's pattern (line 11) — "delegate to a shared function, or inject the same checks into both" — is a good practice, but neither document explains how worker gate failures flow into the orchestrator's priority chain. If a worker gate check fails, does it trigger the orchestrator's priority-2 (validator CRITICAL/HIGH) or is it handled elsewhere?
 
 ---
 
 ### Final Recommendation
 
-**ACCEPT** — The documents cover different domains (orchestrator review pipeline vs. worker operational safety) with no contradictions. The gaps identified are documentation gaps, not logic gaps: the orchestrator policy would benefit from a note acknowledging the worker's independent safety gate layer and defining the shared severity vocabulary for "blocking finding." These are improvements, not blockers.
+**PASS_WITH_NOTES** — The documents don't directly contradict each other, but the lack of cross-references and shared terminology creates a gap that could cause confusion during integration. Recommend adding a `[[worker-gate-conformance]]` link to the orchestrator policy's "Related Rules" section, and clarifying whether the worker's "6 critical checks" map to the orchestrator's `CRITICAL` severity level.

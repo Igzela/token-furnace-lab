@@ -1,56 +1,50 @@
-Now I have enough context to produce the review.
-
 ---
 
-## Review: `knowledge/wiki/permission-boundary-model.md`
+## Review: `knowledge/wiki/multi-agent-orchestration-architecture.md`
 
-**Score: 58**
-**Verdict: PASS_WITH_NOTES**
+**Score: 40**
+**Verdict: FAIL**
 **Confidence: HIGH**
-
----
 
 ### Findings
 
-- **[HIGH] Missing critical safety detail: live scope is disabled by design.** The wiki mentions 5 scopes but does not note that `live` has `allowed: []` and `status: not_enabled`. This is the single most important property of the permission model. Source: repo-reader line 35, DR-0002.
+- **[CRITICAL] Line count outdated**: Wiki claims `tf_orchestrator.py` is 833 lines. Actual: 1175 lines (+41%). The orchestrator has grown significantly with fuse and parallel subcommands.
 
-- **[HIGH] Missing critical safety detail: R4/R5 risk classes are not enabled.** The wiki mentions R0-R5 but does not note that R4 (external side effect) and R5 (private content) are explicitly disabled. Source: repo-reader line 37.
+- **[CRITICAL] 11 major subsystems completely undocumented**: The wiki makes no mention of: `adaptive_pipeline.py`, `adaptive_router.py`, `adversarial_review.py`, `confidence_calibrator.py`, `orchestrator_learn.py`, `policy_engine.py`, `review_fusion.py`, `task_profiler.py`, `quality_gate_runner.py`, `tf_agent_executor.py`, `worktree_manager.py`, `routing_outcome_update.py`. These represent orchestration-005 through 015 — the majority of the system's current capability.
 
-- **[HIGH] Missing cross-references to related wiki pages.** Three sibling wiki pages (`policy-runtime-drift.md`, `deny-path-testing.md`, `agent-approval-authority.md`) are derived from the same audit and provide essential context. None are linked. A reader of this page gets no signal that the most critical finding (policy-runtime drift) is documented elsewhere.
+- **[HIGH] Missing subcommands**: Wiki documents 4 subcommands (run, gate, validate, closeout). Actual has 6: **`fuse`** (review fusion from orchestration-005) and **`parallel`** (worktree parallel dispatch from orchestration-007) are missing.
 
-- **[MEDIUM] Evaluator is too vague to be actionable.** "Check that each scope has a corresponding risk class mapping and gate checklist" does not specify what constitutes a valid mapping, what to do if mappings are missing, or how to verify gate enforcement at runtime. Compare with `deny-path-testing.md` which gives a concrete count-based test.
+- **[HIGH] "Single-threaded" limitation is false**: Limitation #2 says "subproblems execute sequentially (parallel dispatch would require async)". This was resolved in orchestration-007 — `run_parallel_dispatch()` exists at line 1056 and the `parallel` subcommand is registered. The limitation should be removed.
 
-- **[MEDIUM] Missing the 13-gate checklist detail.** The repo-reader confirms 13 required checks before live execution (LIVE_ENABLED, Charlie approval, TTL, idempotency key, rollback plan, etc.). The wiki page mentions "gate checklists" generically but does not reference the count or key gates.
+- **[HIGH] Validator table incomplete**: Lists 3 of 7 validators. Missing: `validate_run.py`, `validate_matrix_consistency.py`, `validate_synthesis_evidence.py`, `validate_artifact_schema.py` (exists in `orchestrator-quality-gate-policy.md` but not here).
 
-- **[MEDIUM] Missing ChatGPT approval restriction.** The repo-reader and GPT architect both converge on: "ChatGPT CANNOT be final approver." This is a defining constraint of the approval model. Not mentioned.
+- **[MEDIUM] Architecture diagram incomplete**: Shows basic pipeline only. Missing: adaptive routing layer (task_profiler → memory_matcher → routing_decision), adversarial three-way fusion (original + devil's advocate + defense), policy engine feedback loop, outcome memory.
 
-- **[LOW] No reference to source artifacts.** The page cites `hermes-perm-audit-001` but does not link to the specific model outputs (`gpt-architect.md`, `claude-code-repo-reader.md`) or the decision record (`DR-0002`).
+- **[MEDIUM] Task YAML format missing fields**: No mention of `adversarial`, `adaptive`, `confidence`, or `routing` configuration keys that the newer scripts consume.
 
-- **[LOW] Observation/Rule/Evaluator format is correct but thin.** The observation is accurate but surface-level. A reader unfamiliar with the audit gets no sense of *why* this model exists or what risks it mitigates.
+- **[LOW] E2E test results reference old run**: Only shows `runs/orchestration/20260528-101549/`. Orchestration-013 real benchmark and 015 expanded benchmark results are absent.
 
----
+- **[LOW] Scope validator limitation still listed**: "Scope validator not integrated into main loop" — needs verification against current `run_orchestrate()`.
 
-### Accuracy Verification
+### Accuracy of Existing Content
 
-| Claim | Source | Status |
-|-------|--------|--------|
-| 5-scope model (read, plan, approval.local, dry_run, live) | repo-reader line 35 | CORRECT |
-| Risk classes R0-R5 | repo-reader line 37 | CORRECT |
-| Scopes, risk classes, gates are separate concerns | GPT architect architecture assessment | CORRECT |
-| Source: hermes-perm-audit-001 | run directory confirmed | CORRECT |
+The content that *is* present is largely accurate:
+- Gate priority rules: correct (matches `orchestrator-quality-gate-policy.md`)
+- Adapter pattern rationale: correct
+- Validator/reviewer separation: correct
+- Budget ledger and idempotent resume: correct
+- Task YAML format (for basic use): correct
 
-All factual claims are accurate. No incorrect statements found.
+### Final Recommendation
 
----
+**REPAIR** — The existing content is accurate but the page is frozen circa orchestration-004. It needs:
 
-### Final Recommendation: **REPAIR**
+1. Update line count to 1175
+2. Add `fuse` and `parallel` subcommands to the documented list
+3. Remove "Single-threaded" from limitations (replaced by noting parallel dispatch exists)
+4. Expand architecture diagram to show adaptive routing + adversarial review + policy engine
+5. Document the 11+ new scripts in a Components section (or at minimum, add an "Extended Components" section)
+6. Add 4 missing validators to the table
+7. Add orchestration-013/015 benchmark results to E2E section
 
-The page is factually correct but missing safety-critical details that a future reader would need. Specifically:
-
-1. Add that `live` scope is disabled (`allowed: []`, `not_enabled`)
-2. Add that R4/R5 are not enabled
-3. Add cross-references to `policy-runtime-drift.md`, `deny-path-testing.md`, `agent-approval-authority.md`, and `DR-0002`
-4. Sharpen the evaluator with a concrete check (e.g., "Verify live scope has `allowed: []`; verify R4/R5 are not in any enabled risk class list")
-5. Mention the 13-gate checklist and the ChatGPT approval restriction
-
-The factual content is sound; the repair is about completeness and cross-linking, not correction.
+The `orchestrator-quality-gate-policy.md` page is more current but also needs updating to reference the adversarial review module's three-way fusion gate.

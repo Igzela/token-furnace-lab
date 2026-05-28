@@ -1,7 +1,7 @@
 You are reviewing the following task. Produce a structured review.
 
 ## Task
-The Validator Types table in knowledge/wiki/orchestrator-quality-gate-policy.md references validate_state_machine.py but is missing entries for validate_review_artifact.py, validate_scope_diff.py, and validate_synthesis_evidence.py (all exist in scripts/). Add the missing rows to the table, keeping the existing format. Produce the corrected table as output.
+The Validator Types table in knowledge/wiki/orchestrator-quality-gate-policy.md lists 5 validators but scripts/ contains 7 validate_*.py files. Add the 2 missing validators (validate_synthesis_evidence.py and validate_matrix_consistency.py) to the table, keeping the existing format. Produce the corrected table as output.
 
 ## Required Format
 Score: <0-100>
